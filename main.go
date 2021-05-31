@@ -2,12 +2,13 @@ package main
 
 import (
     "bufio"
+    "math"
     "fmt"
     "log"
     "os"
     "strings"
+    "encoding/binary"
     "github.com/ldsec/idash21_Task2/preprocessing"
-    "time"
 )
 
 //Strain name map
@@ -57,7 +58,7 @@ func main(){
     DCTII := preprocessing.NewDCTII(hash_size*hash_size)
 
     var err error 
-	file, err := os.Open("Challenge.fa")
+	file, err := os.Open("data/Challenge.fa")
     if err != nil {
         log.Fatal(err)
     }
@@ -67,7 +68,17 @@ func main(){
 
     cord_map := map[string][2]int{}
 
+    hash := make([]float64, hash_size*hash_size)
+    buff := make([]byte, hash_size*hash_size*8)
+
+    // Creates the files containing the processed samples
+    var fw *os.File
+    if fw, err = os.Create("data/X_CGR_DCT"); err != nil {
+        panic(err)
+    }
+
     i := 0
+    nb := 0
     for scanner.Scan() {
 
     	if i&1 == 1{
@@ -84,6 +95,7 @@ func main(){
                 substring := strain[j:j+window]
 
                 if strings.ContainsAny(substring, "RYKSMWN"){
+                    nb++
                     continue
                 }
 
@@ -117,7 +129,24 @@ func main(){
             }
 
             DCTII.Transform2D(crgMatrix)
-    	}
+
+            for i := 0; i < hash_size; i++{
+                for j := 0; j < hash_size; j++{
+                    hash[i*hash_size+j] = crgMatrix[j][i]
+                }
+            }
+
+            if fw, err = os.OpenFile("data/X_CGR_DCT", os.O_APPEND|os.O_WRONLY, 0644); err != nil{
+                panic(err)
+            }
+
+            for i := range hash{
+                binary.LittleEndian.PutUint64(buff[i<<3:(i+1)<<3], math.Float64bits(hash[i]))
+            }
+            fw.Write(buff)
+            defer file.Close()
+    	}  
     	i++
     }
+    fmt.Println(nb)
 }
