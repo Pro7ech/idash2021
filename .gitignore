@@ -1,5 +1,5 @@
 
-*.fa
+data/Challenge.fa
 
 data/X_CGR_DCT
 
@@ -13,4 +13,3 @@ model/weights_layer_0.npy
 
 model/weights_layer_0.png
 
-data/
