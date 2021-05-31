@@ -8,19 +8,12 @@ import (
     "os"
     "sync"
     "encoding/binary"
+    "time"
     "github.com/ldsec/idash21_Task2/preprocessing"
 )
 
-//Strain name map
-var strains_map = map[int]string{
-    0:"B.1.427",
-    1:"B.1.1.7",
-    2:"P.1",
-    3:"B.1.526",
-    }
-
 func main(){
-
+    strainMap := preprocessing.StrainsMap
     nbSamplesStrain := preprocessing.NbSamplesPerStrain
     nbSamples := preprocessing.NbSamples
     hashsqrtsize := preprocessing.HashSqrtSize
@@ -47,12 +40,14 @@ func main(){
     hasher := preprocessing.NewDCTHasher(nbGo, window, hashsqrtsize)
 
 
+    start := time.Now()
+
     i := 0
     data := make([]string, nbGo)
     for scanner.Scan() {
 
         if i%200 == 1{
-            fmt.Printf("%-7s : %4d/%d\n", strains_map[i/(2*nbSamplesStrain)], i>>1, nbSamples)
+            fmt.Printf("%-7s : %4d/%d\n", strainMap[i/(2*nbSamplesStrain)], i>>1, nbSamples)
         }
 
         if i&1 == 1{
@@ -89,4 +84,6 @@ func main(){
         }
     	i++
     }
+
+    fmt.Println("Done :", time.Since(start))
 }

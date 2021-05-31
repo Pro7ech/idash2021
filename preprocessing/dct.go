@@ -14,6 +14,11 @@ type ParallelDCTII struct{
 
 
 func NewParallelDCTII(nbGo, n int) (dct *ParallelDCTII){
+
+	if n&(n-1) != 0{
+		panic("n must be a power of two")
+	}
+
 	roots := make([]complex128, n)
 	for i := range roots{
 		angle := 2*3.141592653589793 * float64(i) / float64(n)
@@ -70,9 +75,9 @@ func (dct *ParallelDCTII) Transform2D(worker int, matrix [][]float64){
 
 
 func (dct *ParallelDCTII) Transform1D(worker int, vec []float64){
-	
-	if len(vec) != dct.n{
-		panic("vector length not equal to DCTII parameters")
+
+	if len(vec) > dct.n{
+		panic("vector too large for DCTII parameters")
 	}
 
 	if worker > len(dct.pool)-1{
@@ -83,11 +88,11 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64){
 	pool := dct.pool[worker]
 	scaling := dct.scaling
 
-	for i := 0; i < dct.n>>1; i++{
+	for i := 0; i < len(vec)>>1; i++{
 		pool[i] = complex(vec[i*2], 0)
 		pool[dct.n-1-i] = complex(vec[i*2+1], 0)
 	}
-	
+
 	sliceBitReverseInPlaceComplex128(pool, dct.n)
 
 	var halfm, gap int
@@ -106,6 +111,8 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64){
 	for i := range vec{
 		vec[i] = real(pool[i] * scaling[i])
 	}
+
+
 }
 
 func sliceBitReverseInPlaceComplex128(slice []complex128, n int) {

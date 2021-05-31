@@ -33,7 +33,7 @@ type DCTHasher struct{
 
 func NewDCTHasher(nbGo, window, hashsqrtsize int) (*DCTHasher){
 
-	dct := NewParallelDCTII(nbGo, 4*window*window)
+	dct := NewParallelDCTII(nbGo, 1<<window)
 
 	pool := make([]CRGMatrix, nbGo)
 	for i := range pool{
@@ -71,7 +71,11 @@ func (dcth *DCTHasher) MapCGR(worker int, dna string){
 
         substring := dna[j:j+window]
 
-        if strings.ContainsAny(substring, "RYKSMWN"){
+        // Checks if an invalid character is present
+        // If yes, then jump by the position of the invalid character in the 
+        // current substring and start at the begining of the loop
+    	if idx := strings.IndexAny(substring, "RYKSMWN"); idx != -1{
+    		j+=idx
             continue
         }
 

@@ -10,7 +10,7 @@ from scipy.special import softmax
 nb_samples_per_strain = 2000
 nb_strains = 4
 nb_samples = nb_strains*nb_samples_per_strain
-hash_size = 16
+hash_size = 12
 
 def load_samples(hash_size):
     samples = []
@@ -26,6 +26,53 @@ def load_samples(hash_size):
                     tmp[j] = struct.unpack('d', buff[j*8:(j+1)*8])[0]
             samples += [tmp]
     return np.array(samples)
+
+def evaluate_model(k):
+
+    X = load_samples(hash_size)
+
+    nb_samples = len(X)
+
+    features = len(X[0])
+
+    #Generates the labels
+    Y = []
+    Y += [[1, 0, 0, 0] for i in range(nb_samples_per_strain)]
+    Y += [[0, 1, 0, 0] for i in range(nb_samples_per_strain)]
+    Y += [[0, 0, 1, 0] for i in range(nb_samples_per_strain)]
+    Y += [[0, 0, 0, 1] for i in range(nb_samples_per_strain)]
+
+    #Shuffles
+    available = [i for i in range(nb_samples)]
+    shuffle(available)
+
+    x_all = []
+    y_all = []    
+    for i in available:
+        x_all += [X[i]]
+        y_all += [Y[i]]
+
+    split = nb_samples//k
+
+    for i in range(k):
+        print("k : {}/{}".format(i+1,k))
+
+        x_train = np.array(x_all[:nb_samples-split*(i+1)] + x_all[nb_samples-split*i:])
+        y_train = np.array(y_all[:nb_samples-split*(i+1)] + y_all[nb_samples-split*i:])
+        x_val = np.array(x_all[nb_samples-split*(i+1):nb_samples-split*i])
+        y_val = np.array(y_all[nb_samples-split*(i+1):nb_samples-split*i])
+
+        model = tf.keras.Sequential()
+        model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
+        model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics='categorical_accuracy')
+        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=1000, batch_size=32, verbose=0)
+
+        for i in history.history.keys():
+            print(i, history.history[i][-1])
+        print()
 
 def train_model():
     #TODO : 
@@ -59,25 +106,18 @@ def train_model():
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 
+
+
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
     model.compile(
         optimizer='adam',
-        loss='binary_crossentropy',
-        metrics='binary_accuracy')
+        loss='categorical_crossentropy',
+        metrics='categorical_accuracy')
 
-    history = model.fit(x_train, y_train, epochs=1000, batch_size=32, verbose=2, validation_split=0.0)
+    history = model.fit(x_train, y_train, epochs=1000, batch_size=32, verbose=2, validation_split=0.75)
 
     predictions = model.predict(x_train, verbose=2)
-
-    err = 0
-    for j in range(len(x_train)):
-        L = predictions[j]
-        Y = [i for i in L].index(max([i for i in L]))
-        if Y != [i for i in y_train[j]].index(max(y_train[j])):
-            err += 1
-    acc = 1-(err/8000)
-    print(acc)
 
     for i in range(len(model.layers)):
         layer = model.layers[i]
@@ -113,3 +153,4 @@ def train_model():
         np.save('model/bias_layer_{}.npy'.format(i), weights[1])
 
 train_model()
+#evaluate_model(k=10)
