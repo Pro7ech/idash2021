@@ -6,6 +6,7 @@ import (
     "fmt"
     "log"
     "os"
+    "sync"
     "encoding/binary"
     "github.com/ldsec/idash21_Task2/preprocessing"
 )
@@ -18,15 +19,13 @@ var strains_map = map[int]string{
     3:"B.1.526",
     }
 
-
-
 func main(){
 
     nbSamplesStrain := preprocessing.NbSamplesPerStrain
     nbSamples := preprocessing.NbSamples
     hashsqrtsize := preprocessing.HashSqrtSize
     window := preprocessing.Window
-    nbGo := 1
+    nbGo := 4
 
     var err error 
 	file, err := os.Open("data/Challenge.fa")
@@ -47,29 +46,47 @@ func main(){
 
     hasher := preprocessing.NewDCTHasher(nbGo, window, hashsqrtsize)
 
+
     i := 0
+    data := make([]string, nbGo)
     for scanner.Scan() {
 
-    	if i&1 == 1{
+        if i%200 == 1{
+            fmt.Printf("%-7s : %4d/%d\n", strains_map[i/(2*nbSamplesStrain)], i>>1, nbSamples)
+        }
 
-    		if i%200 == 1{
-    			fmt.Printf("%-7s : %4d/%d\n", strains_map[i/(2*nbSamplesStrain)], i>>1, nbSamples)
-    		}
-    		strain := scanner.Text()
-            
-            hasher.Hash(0, strain)
-            hash := hasher.GetHash(0)
- 
-            if fw, err = os.OpenFile("data/X_CGR_DCT", os.O_APPEND|os.O_WRONLY, 0644); err != nil{
-                panic(err)
-            }
+        if i&1 == 1{
 
-            for i := range hash{
-                binary.LittleEndian.PutUint64(buff[i<<3:(i+1)<<3], math.Float64bits(hash[i]))
-            }
-            fw.Write(buff)
-            defer file.Close()
-    	}  
+          data[(i>>1)%nbGo] = scanner.Text()  
+
+        	if (i>>1)%nbGo == nbGo-1{
+
+                var wg sync.WaitGroup
+                wg.Add(nbGo)
+                for g := 0; g < nbGo; g++{
+                    go func(worker int, strain string){
+                        hasher.Hash(worker, strain)
+                        wg.Done()
+                    }(g, data[g])
+                }
+                wg.Wait()
+     
+                if fw, err = os.OpenFile("data/X_CGR_DCT", os.O_APPEND|os.O_WRONLY, 0644); err != nil{
+                    panic(err)
+                }
+
+                for g := 0; g < nbGo; g++{
+                    hash := hasher.GetHash(g)
+                    for i := range hash{
+                        binary.LittleEndian.PutUint64(buff[i<<3:(i+1)<<3], math.Float64bits(hash[i]))
+                    }
+
+                    fw.Write(buff)
+                }
+
+                defer file.Close()
+        	}  
+        }
     	i++
     }
 }

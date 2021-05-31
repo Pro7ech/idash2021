@@ -2,6 +2,7 @@ package preprocessing
 
 import(
 	"strings"
+	"sync"
 )
 
 type CRGMatrix [][]float64
@@ -24,7 +25,7 @@ type DCTHasher struct{
 	nbGo int
 	window int
 	hsize int 
-	cgrmap map[string][2]int
+	cgrmap *sync.Map
 	dct *ParallelDCTII
 	cgrmatrix []CRGMatrix
 	cgrhash []DCTHash
@@ -44,7 +45,7 @@ func NewDCTHasher(nbGo, window, hashsqrtsize int) (*DCTHasher){
 		hash[i] = NewDCTHash(hashsqrtsize)
 	}
 
-	return &DCTHasher{nbGo:nbGo, window:window, hsize:hashsqrtsize, cgrmap:make(map[string][2]int), dct:dct, cgrmatrix:pool, cgrhash:hash}
+	return &DCTHasher{nbGo:nbGo, window:window, hsize:hashsqrtsize, cgrmap:new(sync.Map), dct:dct, cgrmatrix:pool, cgrhash:hash}
 }
 
 func (dcth *DCTHasher) Hash(worker int, dna string){
@@ -75,18 +76,16 @@ func (dcth *DCTHasher) MapCGR(worker int, dna string){
         }
 
         var x, y int
-        if _, ok := cgrmap[substring]; !ok {
-
+        pos, ok := cgrmap.Load(substring)
+        if !ok {
             for i, char := range substring{
-                pos := CoordMap[string(char)]
-                x += pos[0]<<i
-                y += pos[1]<<i
+                xy := CoordMap[string(char)]
+                x += xy[0]<<i
+                y += xy[1]<<i
             }
-            cgrmap[substring] = [2]int{x, y}
+            cgrmap.Store(substring, [2]int{x, y})
         }else{
-
-            pos := cgrmap[substring]
-            x, y = pos[0], pos[1] 
+        	x,y = pos.([2]int)[0], pos.([2]int)[1]
         }
 
         cgrmatrix[x][y] += 1.0
