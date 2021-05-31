@@ -5,15 +5,15 @@ import(
 )
 
 
-type DCTII struct{
+type ParallelDCTII struct{
 	n int
 	roots []complex128
 	scaling []complex128
-	pool []complex128
+	pool [][]complex128
 }
 
 
-func NewDCTII(n int) (dct *DCTII){
+func NewParallelDCTII(nbGo, n int) (dct *ParallelDCTII){
 	roots := make([]complex128, n)
 	for i := range roots{
 		angle := 2*3.141592653589793 * float64(i) / float64(n)
@@ -32,11 +32,16 @@ func NewDCTII(n int) (dct *DCTII){
 		}
 	}
 
-	return &DCTII{n:n, roots:roots, scaling:scaling, pool:make([]complex128, n)}
+	pool := make([][]complex128, nbGo)
+	for i := range pool{
+		pool[i] = make([]complex128, n)
+	}
+
+	return &ParallelDCTII{n:n, roots:roots, scaling:scaling, pool:pool}
 }
 
 
-func (dct *DCTII) Transform2D(matrix [][]float64){
+func (dct *ParallelDCTII) Transform2D(worker int, matrix [][]float64){
 
 	// Transpose
 	for i := 0; i < len(matrix)-1; i++{
@@ -47,7 +52,7 @@ func (dct *DCTII) Transform2D(matrix [][]float64){
 
 	// DCT II
 	for i := range matrix{
-		dct.Transform1D(matrix[i])
+		dct.Transform1D(worker, matrix[i])
 	}
 
 	// Transpose
@@ -59,18 +64,23 @@ func (dct *DCTII) Transform2D(matrix [][]float64){
 
 	// DCT II
 	for i := range matrix{
-		dct.Transform1D(matrix[i])
+		dct.Transform1D(worker, matrix[i])
 	}
 }
 
 
-func (dct *DCTII) Transform1D(vec []float64){
+func (dct *ParallelDCTII) Transform1D(worker int, vec []float64){
+	
 	if len(vec) != dct.n{
 		panic("vector length not equal to DCTII parameters")
 	}
 
+	if worker > len(dct.pool)-1{
+		panic("#worker larger than DCTII parameters")
+	}
+
 	roots := dct.roots
-	pool := dct.pool
+	pool := dct.pool[worker]
 	scaling := dct.scaling
 
 	for i := 0; i < dct.n>>1; i++{

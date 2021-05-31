@@ -13,7 +13,7 @@ func TestDCTII(t *testing.T){
 
 		n := 256
 
-		dct := NewDCTII(n)
+		dct := NewParallelDCTII(1, n)
 		
 		matrix := make([][]float64, n)
 		for i := range matrix{
@@ -25,7 +25,7 @@ func TestDCTII(t *testing.T){
 
 		m_want, _ := go_fourier.DCT2D(matrix)
 
-		dct.Transform2D(matrix)
+		dct.Transform2D(0, matrix)
 
 		epsilon := 1e-10
 
@@ -45,7 +45,7 @@ func BenchmarkDCTII(b *testing.B){
 
 	n := 256
 
-	dct := NewDCTII(n)
+	dct := NewParallelDCTII(1, n)
 	
 	matrix := make([][]float64, n)
 	for i := range matrix{
@@ -58,7 +58,7 @@ func BenchmarkDCTII(b *testing.B){
 	b.Run("DCT2D_256x256_custom", func(b *testing.B) {
 
 		for i := 0; i < b.N; i++{
-			dct.Transform2D(matrix)
+			dct.Transform2D(0, matrix)
 		}
 	})
 
