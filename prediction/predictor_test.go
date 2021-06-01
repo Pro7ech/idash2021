@@ -51,6 +51,7 @@ func TestPredictor(t *testing.T){
 
     nbCiphertexts := len(hashes)/int(params.N())+1
 
+    start := time.Now()
 	ciphertexts := make([][]*ckks.Ciphertext, nbCiphertexts)
 	plaintext := ckks.NewPlaintext(params, 0, lib.HashScale)
 	// For each ciphertext containing N j-th coefficient of a hash
@@ -79,13 +80,14 @@ func TestPredictor(t *testing.T){
 			ciphertexts[i][j] = encryptor.EncryptNew(plaintext)
 		}
 	}
+	fmt.Printf("Done : %s\n", time.Since(start))
 
 	predictions := make([][]float64, nbHashes)
 	for i := range predictions{
 		predictions[i] = make([]float64, 4)
 	}
 
-	start := time.Now()
+	start = time.Now()
 	for i := 0; i < lib.NbStrains; i++{
 		for j := range ciphertexts{
 			res := ckks.NewCiphertext(params, 1, 0, lib.HashScale*lib.ModelScale)

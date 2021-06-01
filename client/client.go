@@ -7,6 +7,7 @@ import(
 	"math"
 	"bufio"
 	"fmt"
+	"time"
 	"github.com/ldsec/lattigo/v2/ckks"
 	//"github.com/ldsec/idash21_Task2/utils"
 	"github.com/ldsec/idash21_Task2/lib"
@@ -72,12 +73,12 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     i := 0
     data := make([]string, nbGoRoutines)
     remain := nbGenomes%nbGoRoutines
-    fmt.Printf("Processing Genomes...\n")
+    start := time.Now()
     for scanner.Scan() {
 
-    	//if i%200==0 && (i>>1) < nbGenomes{
-    	//	fmt.Printf("% 5d/%d...\n", i>>1, nbGenomes)
-    	//}
+    	if i%20==0 && (i>>1) < nbGenomes{
+    		fmt.Printf("\rProcessing %4d Genomes :%3d%%", nbGenomes, int(100*(float64(i>>1)/float64(nbGenomes))))
+    	}
 
     	// Even indexes = name
     	// Odd indexes = genome
@@ -123,6 +124,8 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     	}
     }
 
+    fmt.Printf("\rProcessing %4d Genomes : %3d%% (%s)\n", nbGenomes, 100, time.Since(start))
+
     // We need to encrypt a HashSize x nbGenomes matrix where the i-th row of the
     // matrix is the i-th coefficient of the hash of each genome
 
@@ -132,12 +135,11 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     // Number of ciphertext per column of the matrix
     coefficientsPerGoRoutine := int(math.Ceil(float64(lib.HashSize)/float64(nbGoRoutines)))
 
-    fmt.Println(nbCiphertextsPerCoefficient)
-    fmt.Println(coefficientsPerGoRoutine)
-
     ciphertexts := make([][]*ckks.Ciphertext, nbCiphertextsPerCoefficient)
 
+    start = time.Now()
     // We encrypt batch of coefficients of eatch row
+    
     for i := 0; i < nbCiphertextsPerCoefficient; i++{
 
     	ciphertexts[i] = make([]*ckks.Ciphertext, lib.HashSize)
@@ -145,6 +147,8 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     	var wg sync.WaitGroup
 	    wg.Add(nbGoRoutines)
     	for g := 0; g < nbGoRoutines; g++{
+
+    		fmt.Printf("\r Encrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*nbGoRoutines + g)/float64(nbCiphertextsPerCoefficient*nbGoRoutines)))
 
     		start := g*coefficientsPerGoRoutine
     		end := (g+1)*coefficientsPerGoRoutine
@@ -172,11 +176,12 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     	}
     	wg.Wait()
 
-
     	// Marshales the ciphertexts
 
-    	
+
     }
+
+    fmt.Printf("\rEncrypting %4d Hashes  : %3d%% (%s)\n", nbGenomes, 100, time.Since(start))
     
 
 

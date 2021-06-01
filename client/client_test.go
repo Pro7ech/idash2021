@@ -9,5 +9,5 @@ import(
 func TestNewClient(t *testing.T){
 	client := NewClient()
 
-	client.ProcessAndEncrypt(4, "../data/Challenge.fa", 15)
+	client.ProcessAndEncrypt(4, "../data/Challenge.fa", 2000)
 }
