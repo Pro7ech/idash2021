@@ -7,21 +7,21 @@ import(
 	"time"
 	"testing"
 	"encoding/binary"
-	"github.com/ldsec/idash21_Task2/params"
+	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 )
 
 func TestPredictor(t *testing.T){
-	schemeParams, _ := ckks.NewParametersFromModuli(params.LogN, &ckks.Moduli{Qi:params.Q, Pi:[]uint64{}})
-	predictor := NewPredictor(schemeParams)
+	params, _ := ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi:lib.Q, Pi:[]uint64{}})
+	predictor := NewPredictor(params)
 	predictor.LoadModel()
 	//predictor.PrintModel()
 
-	kgen := ckks.NewKeyGenerator(schemeParams)
+	kgen := ckks.NewKeyGenerator(params)
 	sk := kgen.GenSecretKeyGaussian()
-	encoder := ckks.NewEncoder(schemeParams)
-	encryptor := ckks.NewEncryptorFromSk(schemeParams, sk)
-	decryptor := ckks.NewDecryptor(schemeParams, sk)
+	encoder := ckks.NewEncoder(params)
+	encryptor := ckks.NewEncryptorFromSk(params, sk)
+	decryptor := ckks.NewDecryptor(params, sk)
 
 	var err error
 	var file *os.File
@@ -36,29 +36,29 @@ func TestPredictor(t *testing.T){
 		panic(err)
 	}
 
-	nbHashes := params.NbSamples
+	nbHashes := lib.NbSamples
 
 	// list of CGR-DCTII hashes 
 	hashes := make([][]float64, nbHashes)
     for i := range hashes{
-    	tmp := make([]float64, params.HashSize)
-    	b := buff[(i*params.HashSize)<<3:(i*params.HashSize+1)<<3]
+    	tmp := make([]float64, lib.HashSize)
+    	b := buff[(i*lib.HashSize)<<3:(i*lib.HashSize+1)<<3]
     	for j := range tmp{
     		tmp[j] = math.Float64frombits(binary.LittleEndian.Uint64(b[j<<3:(j+1)<<3]))
     	}
     	hashes[i] = tmp 
     }
 
-    nbCiphertexts := len(hashes)/int(schemeParams.N())+1
+    nbCiphertexts := len(hashes)/int(params.N())+1
 
 	ciphertexts := make([][]*ckks.Ciphertext, nbCiphertexts)
-	plaintext := ckks.NewPlaintext(schemeParams, 0, params.HashScale)
+	plaintext := ckks.NewPlaintext(params, 0, lib.HashScale)
 	// For each ciphertext containing N j-th coefficient of a hash
 	for i := range ciphertexts{
-		ciphertexts[i] = make([]*ckks.Ciphertext, params.HashSize)
+		ciphertexts[i] = make([]*ckks.Ciphertext, lib.HashSize)
 
-		start := i*int(schemeParams.N())
-		end := (i+1)*int(schemeParams.N())
+		start := i*int(params.N())
+		end := (i+1)*int(params.N())
 		if end > len(hashes){
 			end = len(hashes)
 		}
@@ -69,7 +69,7 @@ func TestPredictor(t *testing.T){
 
 		for j := range ciphertexts[i]{
 
-			values := make([]float64, schemeParams.N())
+			values := make([]float64, params.N())
 			for k := 0; k<len(hashSplit); k++{
 				values[k] = hashSplit[k][j]
 			}
@@ -86,14 +86,14 @@ func TestPredictor(t *testing.T){
 	}
 
 	start := time.Now()
-	for i := 0; i < params.NbStrains; i++{
+	for i := 0; i < lib.NbStrains; i++{
 		for j := range ciphertexts{
-			res := ckks.NewCiphertext(schemeParams, 1, 0, params.HashScale*params.ModelScale)
+			res := ckks.NewCiphertext(params, 1, 0, lib.HashScale*lib.ModelScale)
 			predictor.DotProduct(ciphertexts[j], i, res)
 			valuesTest := encoder.DecodeCoeffs(decryptor.DecryptNew(res)) 
 			
-			idx := j*int(schemeParams.N())
-			maxN := int(schemeParams.N())
+			idx := j*int(params.N())
+			maxN := int(params.N())
 			if j == len(ciphertexts)-1{
 				maxN = nbHashes%maxN
 			}
@@ -119,30 +119,30 @@ func TestPredictor(t *testing.T){
 }
 
 func BenchmarkPredictor(b *testing.B){
-	schemeParams, _ := ckks.NewParametersFromModuli(params.LogN, &ckks.Moduli{Qi:params.Q, Pi:[]uint64{}})
-	predictor := NewPredictor(schemeParams)
+	params, _ := ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi:lib.Q, Pi:[]uint64{}})
+	predictor := NewPredictor(params)
 	predictor.LoadModel()
 
-	kgen := ckks.NewKeyGenerator(schemeParams)
+	kgen := ckks.NewKeyGenerator(params)
 	sk := kgen.GenSecretKeyGaussian()
-	encoder := ckks.NewEncoder(schemeParams)
-	encryptor := ckks.NewEncryptorFromSk(schemeParams, sk)
+	encoder := ckks.NewEncoder(params)
+	encryptor := ckks.NewEncryptorFromSk(params, sk)
 
-	values := make([]float64, schemeParams.N())
+	values := make([]float64, params.N())
 	for i := range values{
 		values[i] = 1.0
 	}
 
-	plaintext := ckks.NewPlaintext(schemeParams, 0, params.HashScale)
+	plaintext := ckks.NewPlaintext(params, 0, lib.HashScale)
 	encoder.EncodeCoeffs(values, plaintext)
 
-	ciphertexts := make([]*ckks.Ciphertext, params.HashSqrtSize*params.HashSqrtSize)
+	ciphertexts := make([]*ckks.Ciphertext, lib.HashSqrtSize*lib.HashSqrtSize)
 
 	for i := range ciphertexts{
 		ciphertexts[i] = encryptor.EncryptNew(plaintext)
 	}
 
-	res := ckks.NewCiphertext(schemeParams, 1, 0, params.HashScale*params.ModelScale)
+	res := ckks.NewCiphertext(params, 1, 0, lib.HashScale*lib.ModelScale)
 
 	b.Run("DotProduct_(1x256)x(256x4)", func(b *testing.B) {
 

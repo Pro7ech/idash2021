@@ -9,16 +9,16 @@ import (
     "sync"
     "encoding/binary"
     "time"
-    "github.com/ldsec/idash21_Task2/params"
+    "github.com/ldsec/idash21_Task2/lib"
     "github.com/ldsec/idash21_Task2/preprocessing"
 )
 
 func main(){
-    strainMap := params.StrainsMap
-    nbSamplesStrain := params.NbSamplesPerStrain
-    nbSamples := params.NbSamples
-    hashsqrtsize := params.HashSqrtSize
-    window := params.Window
+    strainMap := lib.StrainsMap
+    nbSamplesStrain := lib.NbSamplesPerStrain
+    nbSamples := lib.NbSamples
+    hashsqrtsize := lib.HashSqrtSize
+    window := lib.Window
     nbGo := 4
 
     var err error 

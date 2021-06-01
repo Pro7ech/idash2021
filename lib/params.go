@@ -1,4 +1,4 @@
-package params
+package lib
 
 
 //Strain name map
@@ -23,4 +23,4 @@ var Q = []uint64{0x20002801}
 var HashScale float64 = 1<<16
 var ModelScale float64 = 7
 var Sigma = 3.2
-var Bound = 19
+var SigmaBound uint64 = 19

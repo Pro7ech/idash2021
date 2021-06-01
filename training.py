@@ -107,7 +107,7 @@ def train_model():
     y_train = np.array(y_train)
 
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(4, activation='linear', kernel_initializer='he_normal', input_shape=(features,)))
+    model.add(tf.keras.layers.Dense(4, activation='sigmoid', kernel_initializer='he_normal', input_shape=(features,)))
     model.compile(
         optimizer='adam',
         loss='categorical_crossentropy',
@@ -150,7 +150,7 @@ def train_model():
             f.close()
         np.save('model/bias_layer_{}.npy'.format(i), weights[1])
 
-#train_model()
+train_model()
 #evaluate_model(k=10)
 
 X = load_samples(hash_size)

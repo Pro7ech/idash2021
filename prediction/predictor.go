@@ -7,7 +7,7 @@ import(
 	"unsafe"
 	"math/big"
 	"encoding/binary"
-	"github.com/ldsec/idash21_Task2/params"
+	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
 )
@@ -28,7 +28,7 @@ type Model struct{
 
 func NewPredictor(schemeParams *ckks.Parameters)(*Predictor){
 	ringQ, _ := ring.NewRing(schemeParams.N(), schemeParams.Qi())
-	pool := make([]*ring.Poly, params.NbStrains)
+	pool := make([]*ring.Poly, lib.NbStrains)
 	for i := range pool{
 		pool[i] = ringQ.NewPoly()
 	}
@@ -56,7 +56,7 @@ func (p *Predictor) PrintModel(){
 
 func (p *Predictor) LoadModel(){
 
-	nbStrains := params.NbStrains
+	nbStrains := lib.NbStrains
 	baseRing := p.baseRing
 	bredParams := baseRing.GetBredParams()[0]
 	Q := baseRing.Modulus[0]
@@ -75,14 +75,14 @@ func (p *Predictor) LoadModel(){
 		panic(err)
 	}
 
-	weights := make([][]float64, params.NbStrains)
-	weightsScaledMontgomery := make([][]uint64, params.HashSize)
+	weights := make([][]float64, lib.NbStrains)
+	weightsScaledMontgomery := make([][]uint64, lib.HashSize)
 	for i := range weights{
-		tmp0 := make([]float64, params.HashSize)
-		tmp1 := make([]uint64, params.HashSize)
+		tmp0 := make([]float64, lib.HashSize)
+		tmp1 := make([]uint64, lib.HashSize)
 		for j := range tmp0{
 			tmp0[j] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i + j*nbStrains)<<3:(i + j*nbStrains+1)<<3]))
-			tmp1[j] = ring.MForm(scaleUpExact(tmp0[j], params.ModelScale, Q), Q, bredParams)
+			tmp1[j] = ring.MForm(scaleUpExact(tmp0[j], lib.ModelScale, Q), Q, bredParams)
 
 		}
 		weights[i] = tmp0
@@ -103,13 +103,13 @@ func (p *Predictor) LoadModel(){
 		panic(err)
 	}
 
-	bias := make([]float64, params.NbStrains)
-	biasScaled := make([]*ring.Poly, params.NbStrains)
+	bias := make([]float64, lib.NbStrains)
+	biasScaled := make([]*ring.Poly, lib.NbStrains)
 	for i := range bias{
 		bias[i] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i)<<3:(i+1)<<3]))
 
 		tmp := baseRing.NewPoly()
-		baseRing.AddScalar(tmp, scaleUpExact(bias[i], params.HashScale*params.ModelScale, Q), tmp)
+		baseRing.AddScalar(tmp, scaleUpExact(bias[i], lib.HashScale*lib.ModelScale, Q), tmp)
 		baseRing.NTT(tmp, tmp)
 
 		biasScaled[i] = tmp
