@@ -5,6 +5,13 @@ import(
 	"sync"
 )
 
+//Fractal position map
+var CoordMap = map[string][2]int{
+    "A" : [2]int{0, 0},
+    "C" : [2]int{0, 1},
+    "G" : [2]int{1, 0},
+    "T" : [2]int{1, 1}}
+
 type CRGMatrix [][]float64
 
 func NewCRGMatrix(window int)(cgr CRGMatrix){

@@ -6,8 +6,6 @@ import(
 	"math/Rand"
 )
 
-
-
 func BenchmarkProcessing(b *testing.B){
 
 	hasher := NewDCTHasher(1, 8, 16)

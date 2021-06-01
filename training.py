@@ -10,7 +10,7 @@ from scipy.special import softmax
 nb_samples_per_strain = 2000
 nb_strains = 4
 nb_samples = nb_strains*nb_samples_per_strain
-hash_size = 12
+hash_size = 16
 
 def load_samples(hash_size):
     samples = []
@@ -84,6 +84,10 @@ def train_model():
     #Load the training data
     X = load_samples(hash_size)
 
+    X = np.clip(X, -1, 1)
+
+    print(np.max(X), np.min(X))
+
     features = len(X[0])
 
     #Generates the labels
@@ -106,8 +110,6 @@ def train_model():
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 
-
-
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
     model.compile(
@@ -115,7 +117,7 @@ def train_model():
         loss='categorical_crossentropy',
         metrics='categorical_accuracy')
 
-    history = model.fit(x_train, y_train, epochs=1000, batch_size=32, verbose=2, validation_split=0.75)
+    history = model.fit(x_train, y_train, epochs=1000, batch_size=32, verbose=2, validation_split=0.0)
 
     predictions = model.predict(x_train, verbose=2)
 
@@ -152,5 +154,48 @@ def train_model():
             f.close()
         np.save('model/bias_layer_{}.npy'.format(i), weights[1])
 
-train_model()
+#train_model()
 #evaluate_model(k=10)
+
+X = load_samples(hash_size)
+X = np.clip(X, -1, 1)
+
+
+weights = np.load('model/weights_layer_{}.npy'.format(0))
+for i in range(len(weights)):
+    print(i, weights[i])
+bias = np.load('model/bias_layer_{}.npy'.format(0))
+
+#weights /= 10.0
+bias /= 10.0
+
+log_bit = 14
+X = np.round(X*2**log_bit)/(2**log_bit)
+
+log_bit = 7
+weights = np.round(weights*2**log_bit)/(2**log_bit)
+
+log_bit = 7
+bias = np.round(bias*2**log_bit)/(2**log_bit)
+
+
+
+
+err = 0
+mm = 1
+min_res = 0
+max_res = 0
+for i in range(1):
+    U = np.matmul(X[i], weights) + bias
+    max_res = max(max_res, np.max(U))
+    min_res = min(min_res, np.min(U))
+    L = softmax(U*10).tolist()
+    pred = L.index(max(L))
+    mm = min(mm, max(L))
+    if pred != i//2000:
+        err += 1
+acc = 1-(err/8000)
+print(acc)
+print(mm)
+print(max_res)
+print(min_res)
