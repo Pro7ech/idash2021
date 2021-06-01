@@ -135,26 +135,32 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     // Number of ciphertext per column of the matrix
     coefficientsPerGoRoutine := int(math.Ceil(float64(lib.HashSize)/float64(nbGoRoutines)))
 
-    ciphertexts := make([][]*ckks.Ciphertext, nbCiphertextsPerCoefficient)
-
     start = time.Now()
     // We encrypt batch of coefficients of eatch row
-    
-    for i := 0; i < nbCiphertextsPerCoefficient; i++{
+    ciphertexts := make([]*ckks.Ciphertext, lib.HashSize)
+    dataLen := lib.GetCiphertextDataLenSeeded(ckks.NewCiphertext(c.params, 1, 0, 0), true)
+    buff := make([]byte, dataLen)
 
-    	ciphertexts[i] = make([]*ckks.Ciphertext, lib.HashSize)
+    // Creates the files containing the compressed ciphertexts
+    var fw *os.File
+	if fw, err = os.Create("../data/ciphertextClient"); err != nil {
+		panic(err)
+	}
+	defer fw.Close()
+
+    for i := 0; i < nbCiphertextsPerCoefficient; i++{
 
     	var wg sync.WaitGroup
 	    wg.Add(nbGoRoutines)
     	for g := 0; g < nbGoRoutines; g++{
 
-    		fmt.Printf("\r Encrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*nbGoRoutines + g)/float64(nbCiphertextsPerCoefficient*nbGoRoutines)))
+    		fmt.Printf("\rEncrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*nbGoRoutines + g)/float64(nbCiphertextsPerCoefficient*nbGoRoutines)))
 
     		start := g*coefficientsPerGoRoutine
     		end := (g+1)*coefficientsPerGoRoutine
 
     		if g == nbGoRoutines-1{
-    			end = lib.HashSize-1
+    			end = lib.HashSize
     		}
 
             go func(worker, startHash, endHash int){
@@ -168,7 +174,7 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
             	tmp := encryptor.Encrypt(worker, startGenome, endGenome, hashTransposed[startHash:endHash])
 
             	for j := startHash; j < endHash; j++{
-            		ciphertexts[i][j] = tmp[j-startHash]
+            		ciphertexts[j] = tmp[j-startHash]
             	}
 
                 wg.Done()
@@ -178,7 +184,14 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
 
     	// Marshales the ciphertexts
 
+    	for j := range ciphertexts {
 
+			if err = lib.MarshalBinaryCiphertextSeeded32(ciphertexts[j], buff); err != nil {
+				panic(err)
+			}
+
+			fw.Write(buff)
+		}
     }
 
     fmt.Printf("\rEncrypting %4d Hashes  : %3d%% (%s)\n", nbGenomes, 100, time.Since(start))
