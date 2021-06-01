@@ -14,12 +14,13 @@ var NbSamplesPerStrain = 2000
 var NbStrains = 4
 var NbSamples = NbStrains*NbSamplesPerStrain
 var HashSqrtSize = 16
+var HashSize = HashSqrtSize*HashSqrtSize
 var Window = 8
 
 // Crypto parameters
 var LogN uint64 = 10
 var Q = []uint64{0x20002801}
-var HashScale float64 = 1<<15
-var ModelScale float64 = 1<<6
+var HashScale float64 = 1<<16
+var ModelScale float64 = 7
 var Sigma = 3.2
 var Bound = 19

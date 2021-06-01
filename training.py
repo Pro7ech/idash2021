@@ -84,10 +84,6 @@ def train_model():
     #Load the training data
     X = load_samples(hash_size)
 
-    X = np.clip(X, -1, 1)
-
-    print(np.max(X), np.min(X))
-
     features = len(X[0])
 
     #Generates the labels
@@ -111,7 +107,7 @@ def train_model():
     y_train = np.array(y_train)
 
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
+    model.add(tf.keras.layers.Dense(4, activation='linear', kernel_initializer='he_normal', input_shape=(features,)))
     model.compile(
         optimizer='adam',
         loss='categorical_crossentropy',
@@ -158,42 +154,29 @@ def train_model():
 #evaluate_model(k=10)
 
 X = load_samples(hash_size)
-X = np.clip(X, -1, 1)
-
+X /= 10
 
 weights = np.load('model/weights_layer_{}.npy'.format(0))
-for i in range(len(weights)):
-    print(i, weights[i])
 bias = np.load('model/bias_layer_{}.npy'.format(0))
-
-#weights /= 10.0
-bias /= 10.0
-
-log_bit = 14
-X = np.round(X*2**log_bit)/(2**log_bit)
-
-log_bit = 7
-weights = np.round(weights*2**log_bit)/(2**log_bit)
-
-log_bit = 7
-bias = np.round(bias*2**log_bit)/(2**log_bit)
-
-
-
+bias /= 10
 
 err = 0
 mm = 1
 min_res = 0
 max_res = 0
-for i in range(1):
+for i in range(2):
     U = np.matmul(X[i], weights) + bias
+    
     max_res = max(max_res, np.max(U))
     min_res = min(min_res, np.min(U))
+    
     L = softmax(U*10).tolist()
+    print(L)
     pred = L.index(max(L))
     mm = min(mm, max(L))
     if pred != i//2000:
         err += 1
+    print()
 acc = 1-(err/8000)
 print(acc)
 print(mm)

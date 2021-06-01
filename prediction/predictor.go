@@ -16,6 +16,7 @@ type Predictor struct{
 	params *ckks.Parameters
 	baseRing *ring.Ring
 	model *Model
+	pool []*ring.Poly
 }
 
 type Model struct{
@@ -27,7 +28,11 @@ type Model struct{
 
 func NewPredictor(schemeParams *ckks.Parameters)(*Predictor){
 	ringQ, _ := ring.NewRing(schemeParams.N(), schemeParams.Qi())
-	return &Predictor{params:schemeParams, baseRing:ringQ}
+	pool := make([]*ring.Poly, params.NbStrains)
+	for i := range pool{
+		pool[i] = ringQ.NewPoly()
+	}
+	return &Predictor{params:schemeParams, baseRing:ringQ, pool:pool}
 }
 
 func (p *Predictor) PrintModel(){
@@ -71,10 +76,10 @@ func (p *Predictor) LoadModel(){
 	}
 
 	weights := make([][]float64, params.NbStrains)
-	weightsScaledMontgomery := make([][]uint64, params.HashSqrtSize*params.HashSqrtSize)
+	weightsScaledMontgomery := make([][]uint64, params.HashSize)
 	for i := range weights{
-		tmp0 := make([]float64, params.HashSqrtSize*params.HashSqrtSize)
-		tmp1 := make([]uint64, params.HashSqrtSize*params.HashSqrtSize)
+		tmp0 := make([]float64, params.HashSize)
+		tmp1 := make([]uint64, params.HashSize)
 		for j := range tmp0{
 			tmp0[j] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i + j*nbStrains)<<3:(i + j*nbStrains+1)<<3]))
 			tmp1[j] = ring.MForm(scaleUpExact(tmp0[j], params.ModelScale, Q), Q, bredParams)
@@ -104,7 +109,7 @@ func (p *Predictor) LoadModel(){
 		bias[i] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i)<<3:(i+1)<<3]))
 
 		tmp := baseRing.NewPoly()
-		baseRing.AddScalar(tmp, scaleUpExact(bias[i], params.HashScale, Q), tmp)
+		baseRing.AddScalar(tmp, scaleUpExact(bias[i], params.HashScale*params.ModelScale, Q), tmp)
 		baseRing.NTT(tmp, tmp)
 
 		biasScaled[i] = tmp
@@ -128,36 +133,69 @@ func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output 
 
 	weights := p.model.weightsScaledMontgomery[labelIndex]
 	bias := p.model.biasScaled[labelIndex]
+	pool := p.pool[labelIndex]
 
-	for i, value := range weights{
+	for i := range input{
 
+		weight := weights[i]
 
-		for u := 0; u < 2; u++ {
+		p0 := input[i].Value()[0].Coeffs[0]
+		p1 := pool.Coeffs[0]
 
-			p0 := input[i].Value()[u].Coeffs[0]
-			p1 := output.Value()[u].Coeffs[0]
+		// Montgomery multiplication without modular reduction
+		// sum(ai * 2^64 * bi) = 2^64 * sum(ai * bi)
+		for j := uint64(0); j < baseRing.N; j = j + 8 {
 
-			// Montgomery multiplication without modular reduction
-			// sum(ai * 2^64 * bi) = 2^64 * sum(ai * bi)
-			for j := uint64(0); j < baseRing.N; j = j + 8 {
+			x := (*[8]uint64)(unsafe.Pointer(&p0[j]))
+			y := (*[8]uint64)(unsafe.Pointer(&p1[j]))
 
-				x := (*[8]uint64)(unsafe.Pointer(&p0[j]))
-				y := (*[8]uint64)(unsafe.Pointer(&p1[j]))
+			y[0] += x[0] * weight
+			y[1] += x[1] * weight
+			y[2] += x[2] * weight
+			y[3] += x[3] * weight
+			y[4] += x[4] * weight
+			y[5] += x[5] * weight
+			y[6] += x[6] * weight
+			y[7] += x[7] * weight
+		}
 
-				y[0] += x[0] * value
-				y[1] += x[1] * value
-				y[2] += x[2] * value
-				y[3] += x[3] * value
-				y[4] += x[4] * value
-				y[5] += x[5] * value
-				y[6] += x[6] * value
-				y[7] += x[7] * value
-			}
+		if i%64 == 63 || i == len(input)-1{
+			baseRing.InvMForm(pool, pool)
+			baseRing.Add(output.Value()[0], pool, output.Value()[0])
+			pool.Zero()
 		}
 	}
 
-	baseRing.InvMForm(output.Value()[0], output.Value()[0])
-	baseRing.InvMForm(output.Value()[1], output.Value()[1])
+	for i := range input{
+
+		weight := weights[i]
+
+		p0 := input[i].Value()[1].Coeffs[0]
+		p1 := pool.Coeffs[0]
+
+		// Montgomery multiplication without modular reduction
+		// sum(ai * 2^64 * bi) = 2^64 * sum(ai * bi)
+		for j := uint64(0); j < baseRing.N; j = j + 8 {
+
+			x := (*[8]uint64)(unsafe.Pointer(&p0[j]))
+			y := (*[8]uint64)(unsafe.Pointer(&p1[j]))
+
+			y[0] += x[0] * weight
+			y[1] += x[1] * weight
+			y[2] += x[2] * weight
+			y[3] += x[3] * weight
+			y[4] += x[4] * weight
+			y[5] += x[5] * weight
+			y[6] += x[6] * weight
+			y[7] += x[7] * weight
+		}
+
+		if i%64 == 63 || i == len(input)-1{
+			baseRing.InvMForm(pool, pool)
+			baseRing.Add(output.Value()[1], pool, output.Value()[1])
+			pool.Zero()
+		}
+	}
 
 	baseRing.Add(output.Value()[0], bias, output.Value()[0])
 }
