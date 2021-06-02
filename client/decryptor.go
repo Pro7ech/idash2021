@@ -52,7 +52,7 @@ func (d *Decryptor) DecryptBatchTranspose(ciphertexts []*ckks.Ciphertext) (pred 
 		v := d.encoder.DecodeCoeffs(d.plaintext)
 
 		for j := range pred{
-			pred[i][j] = v[i]
+			pred[j][i] = v[j]
 		}
 	}
 

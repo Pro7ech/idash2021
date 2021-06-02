@@ -1,9 +1,11 @@
 package main
 
 import(
-	//"fmt"
-	"github.com/ldsec/idash21_Task2/client"
+	"fmt"
+	
 	"github.com/ldsec/idash21_Task2/lib"
+	"github.com/ldsec/idash21_Task2/client"
+	"github.com/ldsec/idash21_Task2/preprocessing"
 )
 
 func main(){
@@ -19,6 +21,14 @@ func main(){
 	// 3) Encrypts the processed genomes by batch of 1<<lib.LogN
 	// 4) Saves each batch in a separate file in temp/enc_client_batch_{i}.binary
 	client.ProcessAndEncrypt(lib.GenomeDataPath, 2000)
+
+	fmt.Println("Zeroing matrix:", preprocessing.TimeZeroMatrix)
+	fmt.Println("Check valid string:", preprocessing.TimeCheckString)
+	fmt.Println("Fetch/Check map:", preprocessing.TimeCheckMap)
+	fmt.Println("Allocate Map:", preprocessing.TimeAllocateMap)
+	fmt.Println("Increment matrix :", preprocessing.TimeIncMatrix)
+	fmt.Println("Normalize matrix :", preprocessing.TimeMaxSlice)
+	fmt.Println("2D DCTII :", preprocessing.TimeDCTII)
 
 	/*
 	ciphertexts := lib.UnmarshalBatchSeeded32(lib.EncryptedBatchIndexPath(0))

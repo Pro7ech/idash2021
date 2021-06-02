@@ -199,7 +199,7 @@ func MarshalBatch32(path string, ciphertexts []*ckks.Ciphertext){
 	// Marshales the ciphertexts
 	for i := range ciphertexts {
 
-		if err = MarshalBinaryCiphertextSeeded32(ciphertexts[i], buff); err != nil {
+		if err = MarshalBinaryCiphertext32(ciphertexts[i], buff); err != nil {
 			panic(err)
 		}
 
@@ -215,7 +215,6 @@ func UnmarshalBatch32(path string) (ciphertexts []*ckks.Ciphertext){
 		panic(err)
 	}
 	defer fr.Close()
-
 	
 	buff := make([]byte, 8)
 
@@ -288,17 +287,25 @@ func UnmarshalBinaryCiphertext32(ciphertext *ckks.Ciphertext, data []byte) (err 
 		return errors.New("too small bytearray")
 	}
 
+	ciphertext.Element = new(ckks.Element)
+
+	ciphertext.SetValue(make([]*ring.Poly, uint8(data[0])))
+
 	ciphertext.SetScale(math.Float64frombits(binary.LittleEndian.Uint64(data[1:9])))
 
 	if uint8(data[10]) == 1 {
 		ciphertext.SetIsNTT(true)
 	}
 
-	var pointer uint64
+	var pointer, inc uint64
 	pointer = 11
 
 	for i := range ciphertext.Value() {
-		pointer += DecodeCoeffs32(ciphertext.Value()[i].Coeffs, data[pointer:])
+		ciphertext.Value()[i] = new(ring.Poly)
+		if inc, err = ciphertext.Value()[i].DecodePolyNew32(data[pointer:]); err != nil {
+			return err
+		}
+		pointer += inc
 	}
 
 	if pointer != uint64(len(data)) {

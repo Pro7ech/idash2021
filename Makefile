@@ -15,6 +15,7 @@ build:
 	${GOBUILD} KeyGen.go
 	${GOBUILD} ClientEnc.go
 	${GOBUILD} ServerPred.go
+	${GOBUILD} ClientDec.go
 
 key:
 	./KeyGen 
@@ -22,6 +23,8 @@ enc:
 	./ClientEnc 
 pred:
 	./ServerPred 
+dec:
+	./ClientDec ${NBGENOMES}
 
 clean:
 	${GOBUILD} Clean.go
