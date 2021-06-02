@@ -13,9 +13,14 @@ var StrainsMap = map[int]string{
 var NbSamplesPerStrain = 2000
 var NbStrains = 4
 var NbSamples = NbStrains*NbSamplesPerStrain
+
+// Client pre-processing parameters
 var HashSqrtSize = 16
 var HashSize = HashSqrtSize*HashSqrtSize
 var Window = 8
+
+// Parallelization parameters
+var NbGoRoutines = 4
 
 // Crypto parameters
 var LogN uint64 = 10

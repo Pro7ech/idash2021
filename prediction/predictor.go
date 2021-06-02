@@ -7,9 +7,9 @@ import(
 	"unsafe"
 	"math/big"
 	"encoding/binary"
-	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
+	"github.com/ldsec/idash21_Task2/lib"
 )
 
 type Predictor struct{
@@ -54,7 +54,7 @@ func (p *Predictor) PrintModel(){
 	}
 }
 
-func (p *Predictor) LoadModel(){
+func (p *Predictor) LoadModel(path string){
 
 	nbStrains := lib.NbStrains
 	baseRing := p.baseRing
@@ -65,7 +65,7 @@ func (p *Predictor) LoadModel(){
 
 	var err error
 	var fr *os.File
-	if fr, err = os.Open("../model/weights_layer_0"); err != nil {
+	if fr, err = os.Open(path + "weights_layer_0"); err != nil {
 		panic(err)
 	}
 
@@ -93,7 +93,7 @@ func (p *Predictor) LoadModel(){
 	p.model.weightsScaledMontgomery = weightsScaledMontgomery
 
 
-	if fr, err = os.Open("../model/bias_layer_0"); err != nil {
+	if fr, err = os.Open(path + "bias_layer_0"); err != nil {
 		panic(err)
 	}
 

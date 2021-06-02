@@ -14,7 +14,7 @@ import(
 func TestPredictor(t *testing.T){
 	params, _ := ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi:lib.Q, Pi:[]uint64{}})
 	predictor := NewPredictor(params)
-	predictor.LoadModel()
+	predictor.LoadModel("../"+lib.ModelPath)
 	//predictor.PrintModel()
 
 	kgen := ckks.NewKeyGenerator(params)

@@ -9,14 +9,16 @@ var GenomeDataPath = "data/Challenge.fa"
 // KeysPath is a variable pointing to the Keys folder
 var KeysPath = "keys/SecretKey.binary"
 
+// Path of the plaintext model
+var ModelPath = "model/"
+
 // EncDataPath is a variable pointing to the ciphertext(s) folder
 var EncDataPath = "temps/"
 
 // PredDataPath is a variable pointing to model(s) folder
 var PredDataPath = "prediction_data/"
 
-// ClientParamsPath is a variable pointing to the client's scheme parameters (marshaled)
-var ClientParamsPath = EncDataPath + "enc_client_params.binary"
+var NbBatchToPredict = "temps/nb_batch_predict.binary"
 
 // ClientEncDataPath is a variable pointing to the client encrypted data (marshaled)
 var ClientEncDataPath = EncDataPath + "enc_client_data.binary"
@@ -32,4 +34,8 @@ var ServerEncParameters = EncDataPath + "enc_pred_parameters.binary"
 
 func EncryptedBatchIndexPath(index int) (string){
 	return EncDataPath + "enc_client_batch_" + strconv.Itoa(index) + ".binary"
+}
+
+func EncryptedBatchPredIndexPath(index int) (string){
+	return EncDataPath + "enc_pred_batch_" + strconv.Itoa(index) + ".binary"
 }

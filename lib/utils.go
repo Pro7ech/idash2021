@@ -49,6 +49,7 @@ func FileToByteBuffer(path string) (buff []byte){
 }
 
 
+
 // MarshalBatch32 marshalles a batch of ciphertexts on a file
 func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][]byte){
 
@@ -59,7 +60,6 @@ func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][
 		panic(err)
 	}
 	defer fw.Close()
-
 
 	buff := make([]byte, 8)
 
@@ -170,18 +170,87 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 	return 
 }
 
+
+// MarshalBatch32 marshalles a batch of ciphertexts on a file
+func MarshalBatch32(path string, ciphertexts []*ckks.Ciphertext){
+
+	var fw *os.File
+	var err error
+	// Creates the files containing the compressed ciphertexts
+	if fw, err = os.Create(path); err != nil {
+		panic(err)
+	}
+	defer fw.Close()
+
+	buff := make([]byte, 8)
+
+	ctDataLen := GetCiphertextDataLen32(true)
+
+	// Size of each ciphertext
+	binary.LittleEndian.PutUint64(buff, uint64(ctDataLen))
+	fw.Write(buff)
+
+	// Number of ciphertext per batch
+	binary.LittleEndian.PutUint64(buff, uint64(len(ciphertexts)))
+	fw.Write(buff)
+
+	buff = make([]byte, ctDataLen)
+
+	// Marshales the ciphertexts
+	for i := range ciphertexts {
+
+		if err = MarshalBinaryCiphertextSeeded32(ciphertexts[i], buff); err != nil {
+			panic(err)
+		}
+
+		fw.Write(buff)
+	}
+}
+
+
+func UnmarshalBatch32(path string) (ciphertexts []*ckks.Ciphertext){
+	var fr *os.File
+	var err error
+	if fr, err = os.Open(path); err != nil {
+		panic(err)
+	}
+	defer fr.Close()
+
+	
+	buff := make([]byte, 8)
+
+	fr.Read(buff)
+	ctDataLen := int(binary.LittleEndian.Uint64(buff))
+
+	fr.Read(buff)
+	nbrCiphertexts := int(binary.LittleEndian.Uint64(buff))
+
+	ciphertexts = make([]*ckks.Ciphertext, nbrCiphertexts)
+
+	buff = make([]byte, ctDataLen)
+	for i := range ciphertexts {
+		fr.Read(buff)
+		ciphertexts[i] = new(ckks.Ciphertext)
+		if err = UnmarshalBinaryCiphertext32(ciphertexts[i], buff); err != nil {
+			log.Println("unmarshaling batch seeded position:", i)
+			panic(err)
+		}
+	}
+
+	return 
+}
+
 // GetCiphertextDataLen returns the expected size of a ciphertext in bytes if marshaled
 // Set WithMetaData to true if the metadata must be included
-func GetCiphertextDataLen(ciphertext *ckks.Ciphertext, WithMetaData bool) (dataLen uint64) {
+func GetCiphertextDataLen32(WithMetaData bool) (dataLen int) {
 	if WithMetaData {
 		dataLen += 11
+		dataLen += 4
 	}
 
-	for _, el := range ciphertext.Value() {
-		dataLen += el.GetDataLen32(WithMetaData)
-	}
+	dataLen += 2 * ((len(Q) * (1<<LogN)) << 2)
 
-	return dataLen
+	return
 }
 
 // MarshalBinaryCiphertext32 marshals the input ciphertext on the provided slice of bytes

@@ -3,7 +3,7 @@ package preprocessing
 
 import(
 	"testing"
-	"math/Rand"
+	"math/rand"
 )
 
 func BenchmarkProcessing(b *testing.B){

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 )
 
@@ -20,6 +21,40 @@ func (c *Client) NewDecryptor() (decryptor *Decryptor) {
 	return
 }
 
-func (d *Decryptor) Decrypt() (pred [][]float64){
+
+func (d *Decryptor) DecryptBatch(ciphertexts []*ckks.Ciphertext) (pred [][]float64){
+	pred = make([][]float64, len(ciphertexts))
+	for i := range pred{
+		pred[i] = make([]float64, 1<<lib.LogN)
+	}
+	for i := range ciphertexts{
+		d.decryptor.Decrypt(ciphertexts[i], d.plaintext)
+
+		v := d.encoder.DecodeCoeffs(d.plaintext)
+
+		tmp := pred[i]
+		for j := range v{
+			tmp[j] = v[j]
+		}
+	}
+	
+	return
+}
+
+func (d *Decryptor) DecryptBatchTranspose(ciphertexts []*ckks.Ciphertext) (pred [][]float64){
+	pred = make([][]float64, 1<<lib.LogN)
+	for i := range pred{
+		pred[i] = make([]float64, len(ciphertexts))
+	}
+	for i := range ciphertexts{
+		d.decryptor.Decrypt(ciphertexts[i], d.plaintext)
+
+		v := d.encoder.DecodeCoeffs(d.plaintext)
+
+		for j := range pred{
+			pred[i][j] = v[i]
+		}
+	}
+
 	return
 }
