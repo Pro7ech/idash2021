@@ -9,7 +9,6 @@ import(
 	"fmt"
 	"time"
 	"github.com/ldsec/lattigo/v2/ckks"
-	//"github.com/ldsec/idash21_Task2/utils"
 	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/idash21_Task2/preprocessing"
 )
@@ -50,26 +49,34 @@ func NewClient() (c *Client){
 }
 
 
-func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes int){
+func (c *Client) ProcessAndEncrypt(nbGoRoutines int, nbGenomes int){
 
-	var err error 
-	file, err := os.Open(dataPath)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer file.Close()
 
-    scanner := bufio.NewScanner(file)
+	//*************************** GENOMES PRE-PROCESSING *******************************
 
-    hasher := preprocessing.NewDCTHasher(nbGoRoutines, lib.Window, lib.HashSqrtSize)
+	// Chaos Game Representation + 2D Discret Cosine II hasher
+	hasher := preprocessing.NewDCTHasher(nbGoRoutines, lib.Window, lib.HashSqrtSize)
+
+	// Encryptor
     encryptor := c.NewEncryptor(nbGoRoutines)
 
+    // Allocate genomes hash list
     hashes := make([][]float64, nbGenomes)
     for i := range hashes{
     	hashes[i] = make([]float64, lib.HashSize)
     }
 
-    // Data pre-processing
+
+	// Reads the genomes
+
+	var err error 
+	file, err := os.Open("../"+lib.GenomeDataPath)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer file.Close()
+    scanner := bufio.NewScanner(file)
+
     i := 0
     data := make([]string, nbGoRoutines)
     remain := nbGenomes%nbGoRoutines
@@ -80,18 +87,20 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     		fmt.Printf("\rProcessing %4d Genomes :%3d%%", nbGenomes, int(100*(float64(i>>1)/float64(nbGenomes))))
     	}
 
-    	// Even indexes = name
+    	// Expects :
+    	// Even indexes = genome ID
     	// Odd indexes = genome
         if i&1 == 1 && (i>>1) < nbGenomes{
 
-        	// Assigns a genom to the data list
+        	// Assigns a genome to the data list
 			data[(i>>1)%nbGoRoutines] = scanner.Text() 
 
-			// Once all data list are filled process the genomes
+			// Once data list is filled process the genomes 
+			// or if reached the last genome, processes the data list
         	if (i>>1)%nbGoRoutines == nbGoRoutines-1 || (i>>1) == nbGenomes-1{
 
         		nbToProcess := nbGoRoutines
-        		if (i>>1) == nbGenomes-1{
+        		if (i>>1) == nbGenomes-1 && remain != 0{
         			nbToProcess = remain
         		}
 
@@ -99,9 +108,9 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
                 wg.Add(nbToProcess)
 			    for g := 0; g < nbToProcess; g++{
 					go func(worker int, genome string){
-						if (i>>1)+worker < nbGenomes{
-						    hasher.Hash(worker, genome)
-							copy(hashes[(i>>1)+worker], hasher.GetHash(worker))
+						if (i>>1)+worker-nbToProcess+1 < nbGenomes{
+						    hasher.Hash(worker, genome) // CGR + 2D DCTII hashing
+							copy(hashes[(i>>1)+worker-nbToProcess+1], hasher.GetHash(worker))
 						}
 						wg.Done()
 					}(g, data[g])
@@ -113,6 +122,18 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     }
 
     // Transpose the hash matrix
+    //
+    // 	   Hashes 			     # Genomes 
+    // 	  ________		       _______________
+    // G |dab9072a... 		  |d  2  1  5 
+    // e |				    H |a  4  8  b
+    // n |243527b4...		a |b  3  0  b
+    // o | 			   ->	s |9  5  1  2  ...
+    // m |18014d82...		h |0  2  4  8
+    // e |			    	e |7  7  d  2
+    // s |5bb282af...		s |2  b  8  a
+    //	 |				      |a  4  2  f
+
     hashTransposed := make([][]float64, lib.HashSize)
     for i := range hashTransposed{
     	hashTransposed[i] = make([]float64, nbGenomes)
@@ -125,39 +146,44 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     }
 
     fmt.Printf("\rProcessing %4d Genomes : %3d%% (%s)\n", nbGenomes, 100, time.Since(start))
+    lib.PrintMemUsage()
+
+    //fmt.Println(hashTransposed[0][len(hashTransposed[0])-1])
+    //fmt.Println(hashes[len(hashes)-1][0])
+
+    //*************************** HASHES ENCRYPTION *******************************
 
     // We need to encrypt a HashSize x nbGenomes matrix where the i-th row of the
     // matrix is the i-th coefficient of the hash of each genome
 
-    // Number of ciphertexts per row of the matrix
-    nbCiphertextsPerCoefficient := int(math.Ceil(float64(nbGenomes)/float64(c.params.N())))
-
-    // Number of ciphertext per column of the matrix
-    coefficientsPerGoRoutine := int(math.Ceil(float64(lib.HashSize)/float64(nbGoRoutines)))
-
     start = time.Now()
-    // We encrypt batch of coefficients of eatch row
+
+    // We encrypt batches of N hashes, each i-th coefficient of the N hashes
+    // being stored in its own ciphertext, hence hashSize ciphertexts are needed
+    // per batch of H hashes
+    // Each batch is encrypted in a different file
+
+    // Number of batches
+    nbBatches := int(math.Ceil(float64(nbGenomes)/float64(c.params.N())))
+
+    // Number of ciphertext per Go routine
+    nbCipherPerGoRoutine := int(math.Ceil(float64(lib.HashSize)/float64(nbGoRoutines)))
+
     ciphertexts := make([]*ckks.Ciphertext, lib.HashSize)
-    dataLen := lib.GetCiphertextDataLenSeeded(ckks.NewCiphertext(c.params, 1, 0, 0), true)
-    buff := make([]byte, dataLen)
+    
+	// Number of batch
+    for i := 0; i < nbBatches; i++{
 
-    // Creates the files containing the compressed ciphertexts
-    var fw *os.File
-	if fw, err = os.Create("../data/ciphertextClient"); err != nil {
-		panic(err)
-	}
-	defer fw.Close()
-
-    for i := 0; i < nbCiphertextsPerCoefficient; i++{
+    	encryptor.Seed()
 
     	var wg sync.WaitGroup
 	    wg.Add(nbGoRoutines)
     	for g := 0; g < nbGoRoutines; g++{
 
-    		fmt.Printf("\rEncrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*nbGoRoutines + g)/float64(nbCiphertextsPerCoefficient*nbGoRoutines)))
+    		fmt.Printf("\rEncrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*nbGoRoutines + g)/float64(nbBatches*nbGoRoutines)))
 
-    		start := g*coefficientsPerGoRoutine
-    		end := (g+1)*coefficientsPerGoRoutine
+    		start := g*nbCipherPerGoRoutine
+    		end := (g+1)*nbCipherPerGoRoutine
 
     		if g == nbGoRoutines-1{
     			end = lib.HashSize
@@ -167,8 +193,8 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
 
             	startGenome := i*int(c.params.N())
             	endGenome := (i+1)*int(c.params.N())
-            	if endGenome > nbGenomes-1{
-            		endGenome = nbGenomes-1
+            	if endGenome > nbGenomes{
+            		endGenome = nbGenomes
             	}
 
             	tmp := encryptor.Encrypt(worker, startGenome, endGenome, hashTransposed[startHash:endHash])
@@ -182,20 +208,10 @@ func (c *Client) ProcessAndEncrypt(nbGoRoutines int, dataPath string, nbGenomes 
     	}
     	wg.Wait()
 
-    	// Marshales the ciphertexts
-
-    	for j := range ciphertexts {
-
-			if err = lib.MarshalBinaryCiphertextSeeded32(ciphertexts[j], buff); err != nil {
-				panic(err)
-			}
-
-			fw.Write(buff)
-		}
+    	lib.MarshalBatchSeeded32("../"+lib.EncryptedBatchIndexPath(i), ciphertexts, encryptor.GetSeeds())
     }
 
     fmt.Printf("\rEncrypting %4d Hashes  : %3d%% (%s)\n", nbGenomes, 100, time.Since(start))
+    lib.PrintMemUsage()
     
-
-
 }

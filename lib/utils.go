@@ -5,9 +5,151 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+	"runtime"
+	"fmt"
+	"os"
+	"log"
+	//"sync"
+	"github.com/ldsec/lattigo/v2/utils"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
 )
+
+// PrintMemUsage shows the current memory usage.
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("Memory Usage Stats: Current = %v MiB, ", bToMb(m.Alloc))
+	fmt.Printf("Peak = %v MiB\n", bToMb(m.Sys))
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
+}
+
+
+// MarshalBatch32 marshalles a batch of ciphertexts on a file
+func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][]byte){
+
+	var fw *os.File
+	var err error
+	// Creates the files containing the compressed ciphertexts
+	if fw, err = os.Create(path); err != nil {
+		panic(err)
+	}
+	defer fw.Close()
+
+
+	buff := make([]byte, 8)
+
+	ctDataLen := GetCiphertextDataLenSeeded(true)
+
+	// Size of each ciphertext
+	binary.LittleEndian.PutUint64(buff, uint64(ctDataLen))
+	fw.Write(buff)
+
+	// Number of encryptors used by the client
+	binary.LittleEndian.PutUint64(buff, uint64(len(seeds)))
+	fw.Write(buff)
+
+	// Number of ciphertext per batch
+	binary.LittleEndian.PutUint64(buff, uint64(len(ciphertexts)))
+	fw.Write(buff)
+
+	// Seeds used by the encryptors to sample the uniform polynomials
+	// Will be used by the server to reconstruct the second part of the ciphertexts
+	for i := 0; i < len(seeds); i++ {
+		fw.Write(seeds[i])
+	}
+
+	buff = make([]byte, ctDataLen)
+
+	// Marshales the ciphertexts
+	for i := range ciphertexts {
+
+		if err = MarshalBinaryCiphertextSeeded32(ciphertexts[i], buff); err != nil {
+			panic(err)
+		}
+
+		fw.Write(buff)
+	}
+}
+
+func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
+	var fr *os.File
+	var err error
+	if fr, err = os.Open(path); err != nil {
+		panic(err)
+	}
+	defer fr.Close()
+
+	
+	buff := make([]byte, 8)
+
+	fr.Read(buff)
+	ctDataLen := int(binary.LittleEndian.Uint64(buff))
+
+	fr.Read(buff)
+	nbrSeeds := int(binary.LittleEndian.Uint64(buff))
+
+	fr.Read(buff)
+	nbrCiphertexts := int(binary.LittleEndian.Uint64(buff))
+
+	
+	buff = make([]byte, 64)
+	seeds := make([][]byte, nbrSeeds)
+	for i := range seeds {
+		seeds[i] = make([]byte, 64)
+		fr.Read(buff)
+		copy(seeds[i], buff)
+	}
+
+	ciphertexts = make([]*ckks.Ciphertext, nbrCiphertexts)
+
+
+	// Unmarchals the part -a * sk + m + e of the ciphertext
+	buff = make([]byte, ctDataLen)
+	for i := range ciphertexts {
+		fr.Read(buff)
+		ciphertexts[i] = new(ckks.Ciphertext)
+		if err = UnmarshalBinaryCiphertextSeeded32(ciphertexts[i], buff); err != nil {
+			log.Println("unmarshaling batch seeded position:", i)
+			panic(err)
+		}
+	}
+
+	// Reconstruct the 'a' second part of the ciphertext
+	var ringQ *ring.Ring
+	if ringQ, err = ring.NewRing(1<<LogN, Q); err != nil {
+		panic(err)
+	}
+
+	fmt.Println(nbrSeeds)
+
+	//var wg sync.WaitGroup
+	//wg.Add(nbrSeeds)
+	for i := 0; i < nbrSeeds; i++{
+
+		//go func(start int, seed []byte) {
+
+		prng, err := utils.NewKeyedPRNG(seeds[i])
+		if err != nil {
+			panic(err)
+		}
+
+		crpGen := ring.NewUniformSampler(prng, ringQ)
+
+		for j := 0; j < nbrCiphertexts/nbrSeeds; j++ {
+			ciphertexts[j+i*nbrCiphertexts/nbrSeeds].Value()[1] = crpGen.ReadNew()
+		}
+
+			//wg.Done()
+		//}(i, seeds[i])
+	}
+	//wg.Wait()
+
+	return 
+}
 
 // GetCiphertextDataLen returns the expected size of a ciphertext in bytes if marshaled
 // Set WithMetaData to true if the metadata must be included
@@ -81,12 +223,13 @@ func UnmarshalBinaryCiphertext32(ciphertext *ckks.Ciphertext, data []byte) (err 
 // GetCiphertextDataLenSeeded returns the expected size in bytes of a ciphertext that was generated
 // by a seeded encryption (the uniform polynomial a of [-as + m + e, a] is generated deterministically)
 // In this case, the degree 1 element of the ciphertext (the element a) does not need to be stored
-func GetCiphertextDataLenSeeded(ciphertext *ckks.Ciphertext, WithMetaData bool) (dataLen uint64) {
+func GetCiphertextDataLenSeeded(WithMetaData bool) (dataLen int) {
 	if WithMetaData {
-		dataLen += 11
+		dataLen += 11 //ct metadata
+		dataLen += 2  // poly metadata
 	}
 
-	dataLen += ciphertext.Value()[0].GetDataLen32(WithMetaData)
+	dataLen += (len(Q) * (1<<LogN)) << 2
 
 	return dataLen
 }

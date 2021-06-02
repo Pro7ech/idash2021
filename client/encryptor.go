@@ -24,22 +24,40 @@ type encryptorThread struct{
 	crpGen   *ring.UniformSampler
 	gauGen   *ring.GaussianSampler
 	seed 	 []byte
+	seeded   bool
 	pool     *ring.Poly
+}
+
+func (enc *Encryptor) Seed(){
+	for i := range enc.thread{
+		seed := make([]byte, 64)
+		if _, err := rand.Read(seed); err != nil {
+			log.Fatal(err)
+		}
+
+		prngUniform, err := utils.NewKeyedPRNG(seed)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		enc.thread[i].seed = seed
+		enc.thread[i].crpGen = ring.NewUniformSampler(prngUniform, enc.baseRing)
+		enc.thread[i].seeded = true
+	}
+}
+
+func (enc *Encryptor) GetSeeds() (seeds [][]byte){
+	seeds = make([][]byte, len(enc.thread))
+	for i := range seeds{
+		seeds[i] = make([]byte, len(enc.thread[i].seed))
+		copy(seeds[i], enc.thread[i].seed)
+	}
+	return
 }
 
 func (enc *Encryptor) newEncryptorThread() (*encryptorThread){
 	encoder := ckks.NewEncoder(enc.params)
 	tmpPt := ckks.NewPlaintext(enc.params, 0, enc.params.Scale())
-
-	seed := make([]byte, 64)
-	if _, err := rand.Read(seed); err != nil {
-		log.Fatal(err)
-	}
-
-	prngUniform, err := utils.NewKeyedPRNG(seed)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	bytes := make([]byte, 64)
 	if _, err := rand.Read(bytes); err != nil {
@@ -51,12 +69,11 @@ func (enc *Encryptor) newEncryptorThread() (*encryptorThread){
 		log.Fatal(err)
 	}
 
-	crpGen := ring.NewUniformSampler(prngUniform, enc.baseRing)
 	gauGen := ring.NewGaussianSampler(prngGaussian, enc.baseRing, lib.Sigma, lib.SigmaBound)
 
 	pool := enc.baseRing.NewPoly()
 
-	return &encryptorThread{encoder:encoder, tmpPt:tmpPt, crpGen:crpGen, gauGen:gauGen, seed:seed, pool:pool}
+	return &encryptorThread{encoder:encoder, tmpPt:tmpPt, gauGen:gauGen, pool:pool}
 
 }
 
@@ -85,12 +102,18 @@ func (c *Client) NewEncryptor(nbGoRoutines int) (enc *Encryptor) {
 // Encrypt encodes and encrypts list of slices of float64
 func (enc *Encryptor) Encrypt(worker, start, end int, values [][]float64) (ciphertexts []*ckks.Ciphertext) {
 
+
+	if !enc.thread[worker].seeded{
+		panic("encryptor must be seeded to be able to encrypt")
+	}
+
 	baseRing := enc.baseRing
 	encoder := enc.thread[worker].encoder
 	tmpPt   := enc.thread[worker].tmpPt
 	crpGen  := enc.thread[worker].crpGen
 	gauGen  := enc.thread[worker].gauGen
 	pool    := enc.thread[worker].pool
+
 
 	// Ciphertexts pool
 	ciphertexts = make([]*ckks.Ciphertext, len(values))
@@ -101,6 +124,7 @@ func (enc *Encryptor) Encrypt(worker, start, end int, values [][]float64) (ciphe
 	for i := range values {
 
 		// Encodes the vector on the plaintext m
+		tmpPt.Value()[0].Zero()
 		encoder.EncodeCoeffs(values[i][start:end], tmpPt)
 
 		// Creates a ciphertext of degree 0 (only the first element needs to be stored as the second element is generated from a seed)
