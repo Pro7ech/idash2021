@@ -27,6 +27,27 @@ func bToMb(b uint64) uint64 {
 	return b / 1024 / 1024
 }
 
+// FileToByteBuffer reads a file, puts it in a byte buffer and returns that buffer
+func FileToByteBuffer(path string) (buff []byte){
+
+	fr, err := os.Open(path)
+	if err != nil{
+		panic(err)
+	}
+	defer fr.Close()
+
+	frInfo, err := fr.Stat()
+	if err != nil{
+		panic(err)
+	}
+	buff = make([]byte, frInfo.Size())
+
+	if _, err = fr.Read(buff); err != nil {
+		panic(err)
+	}
+	return
+}
+
 
 // MarshalBatch32 marshalles a batch of ciphertexts on a file
 func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][]byte){
@@ -123,8 +144,6 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 	if ringQ, err = ring.NewRing(1<<LogN, Q); err != nil {
 		panic(err)
 	}
-
-	fmt.Println(nbrSeeds)
 
 	//var wg sync.WaitGroup
 	//wg.Add(nbrSeeds)

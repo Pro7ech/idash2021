@@ -27,23 +27,14 @@ func NewClient() (c *Client){
 	}
 	c.params.SetScale(lib.HashScale)
 
-
-	/*
 	// Reads secretkey
-	var buffsk []byte
-	if buffsk, err = utils.FileToByteBuffer("Keys/SecretKey.binary"); err != nil{
-		log.Fatal(err)
-	}
+	buffsk := lib.FileToByteBuffer("../" + lib.KeysPath)
 
 	// Allocates secretkey
 	c.sk = new(ckks.SecretKey)
 	if err = c.sk.UnmarshalBinary(buffsk); err != nil {
 		log.Fatal(err)
 	}
-	*/
-
-	kgen := ckks.NewKeyGenerator(c.params)
-	c.sk = kgen.GenSecretKeyGaussian()
 
 	return
 }

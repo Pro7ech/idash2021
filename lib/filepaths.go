@@ -7,7 +7,7 @@ import (
 var GenomeDataPath = "data/Challenge.fa"
 
 // KeysPath is a variable pointing to the Keys folder
-var KeysPath = "Keys/SecretKey.binary"
+var KeysPath = "keys/SecretKey.binary"
 
 // EncDataPath is a variable pointing to the ciphertext(s) folder
 var EncDataPath = "temps/"
