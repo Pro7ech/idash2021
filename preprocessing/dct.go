@@ -177,8 +177,19 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 		}
 	}
 
-	for i := range vec {
-		vec[i] = real(pool[i] * scaling[i])
+	for i := 0; i < dct.n; i += 8 {
+		x := (*[8]complex128)(unsafe.Pointer(&pool[i]))
+		y := (*[8]complex128)(unsafe.Pointer(&scaling[i]))
+		z := (*[8]float64)(unsafe.Pointer(&vec[i]))
+
+		z[0] = real(x[0] * y[0])
+		z[1] = real(x[1] * y[1])
+		z[2] = real(x[2] * y[2])
+		z[3] = real(x[3] * y[3])
+		z[4] = real(x[4] * y[4])
+		z[5] = real(x[5] * y[5])
+		z[6] = real(x[6] * y[6])
+		z[7] = real(x[7] * y[7])
 	}
 }
 

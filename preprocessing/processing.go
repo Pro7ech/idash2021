@@ -1,9 +1,5 @@
 package preprocessing
 
-import (
-	"time"
-)
-
 type CRGMatrix [][]float64
 
 func NewCRGMatrix(window int) (cgr CRGMatrix) {
@@ -51,12 +47,7 @@ func (dcth *DCTHasher) Hash(worker int, dna string) {
 	dcth.DCTII(worker)
 }
 
-var TimeCGR time.Duration
-var TimeDCTII time.Duration
-
 func (dcth *DCTHasher) MapCGR(worker int, dna string) {
-
-	start := time.Now()
 
 	window := dcth.window
 	cgrmatrix := dcth.cgrmatrix[worker]
@@ -90,8 +81,6 @@ func (dcth *DCTHasher) MapCGR(worker int, dna string) {
 			tmp[j] /= max
 		}
 	}
-
-	TimeCGR += time.Since(start)
 }
 
 func MapSubString2D(substring string) (x, y int) {
@@ -115,8 +104,6 @@ func MapSubString2D(substring string) (x, y int) {
 
 func (dcth *DCTHasher) DCTII(worker int) {
 
-	start := time.Now()
-
 	cgrmatrix := dcth.cgrmatrix[worker]
 	hash := dcth.cgrhash[worker]
 	hsize := dcth.hsize
@@ -130,8 +117,6 @@ func (dcth *DCTHasher) DCTII(worker int) {
 			hash[idx+j] = tmp[j]
 		}
 	}
-
-	TimeDCTII += time.Since(start)
 }
 
 func (dcth *DCTHasher) GetCGR(worker int) [][]float64 {
