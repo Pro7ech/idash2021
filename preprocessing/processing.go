@@ -1,17 +1,47 @@
 package preprocessing
 
 import(
-	"strings"
-	"sync"
     "time"
 )
 
 //Fractal position map
-var CoordMap = map[string][2]int{
-    "A" : [2]int{0, 0},
-    "C" : [2]int{0, 1},
-    "G" : [2]int{1, 0},
-    "T" : [2]int{1, 1}}
+var CoordMap2D = map[rune][2]int{
+    'A' : [2]int{0, 0},
+    'C' : [2]int{0, 1},
+    'G' : [2]int{1, 0},
+    'T' : [2]int{1, 1}}
+
+var CoordMap1D = map[rune]int{
+    'A' : 0,
+    'C' : 1,
+    'G' : 2,
+    'T' : 3}
+
+func MapSubString2D(substring string) (x,y int){
+    i := 1
+    for _, char := range substring{
+
+        if char == 'C'{
+            y |= i
+        }else if char == 'G'{
+            x |= i
+        }else if char == 'T'{
+            x |= i
+            y |= i
+        }else if char != 'A'{
+            return -1, -1
+        }
+        i<<=1
+    }
+    return x,y
+}
+
+
+//func MapSubString1D(substring string) (x int){
+//   for i, char := range substring{
+//      x += CoordMap2D[char]
+//    }
+//}
 
 type CRGMatrix [][]float64
 
@@ -33,7 +63,6 @@ type DCTHasher struct{
 	nbGo int
 	window int
 	hsize int 
-	cgrmap *sync.Map
 	dct *ParallelDCTII
 	cgrmatrix []CRGMatrix
 	cgrhash []DCTHash
@@ -53,7 +82,7 @@ func NewDCTHasher(nbGo, window, hashsqrtsize int) (*DCTHasher){
 		hash[i] = NewDCTHash(hashsqrtsize)
 	}
 
-	return &DCTHasher{nbGo:nbGo, window:window, hsize:hashsqrtsize, cgrmap:new(sync.Map), dct:dct, cgrmatrix:pool, cgrhash:hash}
+	return &DCTHasher{nbGo:nbGo, window:window, hsize:hashsqrtsize, dct:dct, cgrmatrix:pool, cgrhash:hash}
 }
 
 func (dcth *DCTHasher) Hash(worker int, dna string){
@@ -61,26 +90,16 @@ func (dcth *DCTHasher) Hash(worker int, dna string){
 	dcth.DCTII(worker)
 }
 
-
-var TimeZeroMatrix time.Duration
-var TimeCheckMap time.Duration
-var TimeCheckString time.Duration
-var TimeAllocateMap time.Duration
-var TimeIncMatrix time.Duration
-var TimeMaxSlice time.Duration
+var TimeCGR time.Duration
 var TimeDCTII time.Duration
 
 func (dcth *DCTHasher) MapCGR(worker int, dna string){
 
-    
-
+    start := time.Now()
 
 	window := dcth.window
-	cgrmap := dcth.cgrmap
 	cgrmatrix := dcth.cgrmatrix[worker]
 
-    
-    start := time.Now()
 	//Zero the matrix
 	for i := range cgrmatrix{
 		tmp := cgrmatrix[i]
@@ -88,49 +107,16 @@ func (dcth *DCTHasher) MapCGR(worker int, dna string){
 			tmp[j] = complex(0, 0)
 		}
 	}
-    TimeZeroMatrix += time.Since(start)
    
-
-
+    var x, y int
 	for j := 0; j < len(dna) - window + 1; j++{
-
         substring := dna[j:j+window]
-
-        start = time.Now()
-        // Checks if an invalid character is present
-        // If yes, then jump by the position of the invalid character in the 
-        // current substring and start at the begining of the loop
-    	if idx := strings.IndexAny(substring, "RYKSMWN"); idx != -1{
-    		j+=idx
-            continue
+        x,y = MapSubString2D(substring)
+        if x != -1{
+           cgrmatrix[x][y] += 1.0 
         }
-        TimeCheckString += time.Since(start)
-
-        
-        var x, y int
-        start = time.Now()
-        pos, ok := cgrmap.Load(substring)
-        TimeCheckMap += time.Since(start)
-        if !ok {
-            start = time.Now()
-            for i, char := range substring{
-                xy := CoordMap[string(char)]
-                x += xy[0]<<i
-                y += xy[1]<<i
-            }
-            cgrmap.Store(substring, [2]int{x, y})
-            TimeAllocateMap += time.Since(start)
-        }else{
-        	x,y = pos.([2]int)[0], pos.([2]int)[1]
-        }
-
-
-        start = time.Now()
-        cgrmatrix[x][y] += 1.0
-        TimeIncMatrix += time.Since(start)
     }
 
-    start = time.Now()
     // Get the maximum value of the matrix
     max := maxDoubleSlice(cgrmatrix)
 
@@ -141,7 +127,8 @@ func (dcth *DCTHasher) MapCGR(worker int, dna string){
             tmp[j] /= max
         }
     }
-    TimeMaxSlice += time.Since(start)
+
+    TimeCGR += time.Since(start)
 }
 
 func (dcth *DCTHasher) DCTII(worker int){

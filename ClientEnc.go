@@ -22,12 +22,7 @@ func main(){
 	// 4) Saves each batch in a separate file in temp/enc_client_batch_{i}.binary
 	client.ProcessAndEncrypt(lib.GenomeDataPath, 2000)
 
-	fmt.Println("Zeroing matrix:", preprocessing.TimeZeroMatrix)
-	fmt.Println("Check valid string:", preprocessing.TimeCheckString)
-	fmt.Println("Fetch/Check map:", preprocessing.TimeCheckMap)
-	fmt.Println("Allocate Map:", preprocessing.TimeAllocateMap)
-	fmt.Println("Increment matrix :", preprocessing.TimeIncMatrix)
-	fmt.Println("Normalize matrix :", preprocessing.TimeMaxSlice)
+	fmt.Println("CGR      :", preprocessing.TimeCGR)
 	fmt.Println("2D DCTII :", preprocessing.TimeDCTII)
 
 	/*
