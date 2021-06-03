@@ -21,37 +21,36 @@ func (c *Client) NewDecryptor() (decryptor *Decryptor) {
 	return
 }
 
-
-func (d *Decryptor) DecryptBatch(ciphertexts []*ckks.Ciphertext) (pred [][]float64){
+func (d *Decryptor) DecryptBatch(ciphertexts []*ckks.Ciphertext) (pred [][]float64) {
 	pred = make([][]float64, len(ciphertexts))
-	for i := range pred{
+	for i := range pred {
 		pred[i] = make([]float64, 1<<lib.LogN)
 	}
-	for i := range ciphertexts{
+	for i := range ciphertexts {
 		d.decryptor.Decrypt(ciphertexts[i], d.plaintext)
 
 		v := d.encoder.DecodeCoeffs(d.plaintext)
 
 		tmp := pred[i]
-		for j := range v{
+		for j := range v {
 			tmp[j] = v[j]
 		}
 	}
-	
+
 	return
 }
 
-func (d *Decryptor) DecryptBatchTranspose(ciphertexts []*ckks.Ciphertext) (pred [][]float64){
+func (d *Decryptor) DecryptBatchTranspose(ciphertexts []*ckks.Ciphertext) (pred [][]float64) {
 	pred = make([][]float64, 1<<lib.LogN)
-	for i := range pred{
+	for i := range pred {
 		pred[i] = make([]float64, len(ciphertexts))
 	}
-	for i := range ciphertexts{
+	for i := range ciphertexts {
 		d.decryptor.Decrypt(ciphertexts[i], d.plaintext)
 
 		v := d.encoder.DecodeCoeffs(d.plaintext)
 
-		for j := range pred{
+		for j := range pred {
 			pred[j][i] = v[j]
 		}
 	}

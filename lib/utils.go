@@ -1,18 +1,17 @@
 package lib
 
-
 import (
 	"encoding/binary"
 	"errors"
-	"math"
-	"runtime"
 	"fmt"
-	"os"
 	"log"
+	"math"
+	"os"
+	"runtime"
 	//"sync"
-	"github.com/ldsec/lattigo/v2/utils"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
+	"github.com/ldsec/lattigo/v2/utils"
 )
 
 // PrintMemUsage shows the current memory usage.
@@ -28,16 +27,16 @@ func bToMb(b uint64) uint64 {
 }
 
 // FileToByteBuffer reads a file, puts it in a byte buffer and returns that buffer
-func FileToByteBuffer(path string) (buff []byte){
+func FileToByteBuffer(path string) (buff []byte) {
 
 	fr, err := os.Open(path)
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	defer fr.Close()
 
 	frInfo, err := fr.Stat()
-	if err != nil{
+	if err != nil {
 		panic(err)
 	}
 	buff = make([]byte, frInfo.Size())
@@ -48,10 +47,8 @@ func FileToByteBuffer(path string) (buff []byte){
 	return
 }
 
-
-
 // MarshalBatch32 marshalles a batch of ciphertexts on a file
-func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][]byte){
+func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][]byte) {
 
 	var fw *os.File
 	var err error
@@ -96,7 +93,7 @@ func MarshalBatchSeeded32(path string, ciphertexts []*ckks.Ciphertext, seeds [][
 	}
 }
 
-func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
+func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext) {
 	var fr *os.File
 	var err error
 	if fr, err = os.Open(path); err != nil {
@@ -104,7 +101,6 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 	}
 	defer fr.Close()
 
-	
 	buff := make([]byte, 8)
 
 	fr.Read(buff)
@@ -116,7 +112,6 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 	fr.Read(buff)
 	nbrCiphertexts := int(binary.LittleEndian.Uint64(buff))
 
-	
 	buff = make([]byte, 64)
 	seeds := make([][]byte, nbrSeeds)
 	for i := range seeds {
@@ -126,7 +121,6 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 	}
 
 	ciphertexts = make([]*ckks.Ciphertext, nbrCiphertexts)
-
 
 	// Unmarchals the part -a * sk + m + e of the ciphertext
 	buff = make([]byte, ctDataLen)
@@ -147,7 +141,7 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 
 	//var wg sync.WaitGroup
 	//wg.Add(nbrSeeds)
-	for i := 0; i < nbrSeeds; i++{
+	for i := 0; i < nbrSeeds; i++ {
 
 		//go func(start int, seed []byte) {
 
@@ -162,17 +156,16 @@ func UnmarshalBatchSeeded32(path string) (ciphertexts []*ckks.Ciphertext){
 			ciphertexts[j+i*nbrCiphertexts/nbrSeeds].Value()[1] = crpGen.ReadNew()
 		}
 
-			//wg.Done()
+		//wg.Done()
 		//}(i, seeds[i])
 	}
 	//wg.Wait()
 
-	return 
+	return
 }
 
-
 // MarshalBatch32 marshalles a batch of ciphertexts on a file
-func MarshalBatch32(path string, ciphertexts []*ckks.Ciphertext){
+func MarshalBatch32(path string, ciphertexts []*ckks.Ciphertext) {
 
 	var fw *os.File
 	var err error
@@ -207,15 +200,14 @@ func MarshalBatch32(path string, ciphertexts []*ckks.Ciphertext){
 	}
 }
 
-
-func UnmarshalBatch32(path string) (ciphertexts []*ckks.Ciphertext){
+func UnmarshalBatch32(path string) (ciphertexts []*ckks.Ciphertext) {
 	var fr *os.File
 	var err error
 	if fr, err = os.Open(path); err != nil {
 		panic(err)
 	}
 	defer fr.Close()
-	
+
 	buff := make([]byte, 8)
 
 	fr.Read(buff)
@@ -236,7 +228,7 @@ func UnmarshalBatch32(path string) (ciphertexts []*ckks.Ciphertext){
 		}
 	}
 
-	return 
+	return
 }
 
 // GetCiphertextDataLen returns the expected size of a ciphertext in bytes if marshaled
@@ -247,7 +239,7 @@ func GetCiphertextDataLen32(WithMetaData bool) (dataLen int) {
 		dataLen += 4
 	}
 
-	dataLen += 2 * ((len(Q) * (1<<LogN)) << 2)
+	dataLen += 2 * ((len(Q) * (1 << LogN)) << 2)
 
 	return
 }
@@ -324,7 +316,7 @@ func GetCiphertextDataLenSeeded(WithMetaData bool) (dataLen int) {
 		dataLen += 2  // poly metadata
 	}
 
-	dataLen += (len(Q) * (1<<LogN)) << 2
+	dataLen += (len(Q) * (1 << LogN)) << 2
 
 	return dataLen
 }

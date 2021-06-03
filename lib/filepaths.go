@@ -32,10 +32,10 @@ var ServerMappingTablePath = PredDataPath + "mapping_table.txt"
 // ServerEncParameters is a variable pointing to the processed ciphertexts of the server (marshaled)
 var ServerEncParameters = EncDataPath + "enc_pred_parameters.binary"
 
-func EncryptedBatchIndexPath(index int) (string){
+func EncryptedBatchIndexPath(index int) string {
 	return EncDataPath + "enc_client_batch_" + strconv.Itoa(index) + ".binary"
 }
 
-func EncryptedBatchPredIndexPath(index int) (string){
+func EncryptedBatchPredIndexPath(index int) string {
 	return EncDataPath + "enc_pred_batch_" + strconv.Itoa(index) + ".binary"
 }

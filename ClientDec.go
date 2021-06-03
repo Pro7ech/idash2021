@@ -1,14 +1,14 @@
 package main
 
-import(
-	"os"
-	"math"
-	"strconv"
-	"github.com/ldsec/idash21_Task2/lib"
+import (
 	"github.com/ldsec/idash21_Task2/client"
+	"github.com/ldsec/idash21_Task2/lib"
+	"math"
+	"os"
+	"strconv"
 )
 
-func main(){
+func main() {
 
 	args := os.Args[1:]
 	if len(args) == 0 {
@@ -23,11 +23,11 @@ func main(){
 
 	decryptor := client.NewDecryptor()
 
-	nbBatches := int(math.Ceil(float64(nbGenomes)/float64(int(1<<lib.LogN))))
+	nbBatches := int(math.Ceil(float64(nbGenomes) / float64(int(1<<lib.LogN))))
 
 	predictions := [][]float64{}
 
-	for i := 0; i < nbBatches; i++{
+	for i := 0; i < nbBatches; i++ {
 		ciphertexts := lib.UnmarshalBatch32(lib.EncryptedBatchPredIndexPath(i))
 		predictions = append(predictions, decryptor.DecryptBatchTranspose(ciphertexts)...)
 	}

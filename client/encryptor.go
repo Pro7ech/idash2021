@@ -1,35 +1,34 @@
 package client
 
-import(
-	"log"
+import (
 	"crypto/rand"
 	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/lattigo/v2/ring"
 	"github.com/ldsec/lattigo/v2/ckks"
+	"github.com/ldsec/lattigo/v2/ring"
 	"github.com/ldsec/lattigo/v2/utils"
+	"log"
 )
-
 
 // Encryptor is a struct storing the necessary objects and data to encode the patient data on a plaintext and and encrypt it.
 type Encryptor struct {
-	params    *ckks.Parameters
-	sk        *ring.Poly
-	baseRing  *ring.Ring
-	thread    []*encryptorThread
+	params   *ckks.Parameters
+	sk       *ring.Poly
+	baseRing *ring.Ring
+	thread   []*encryptorThread
 }
 
-type encryptorThread struct{
-	encoder  ckks.Encoder
-	tmpPt    *ckks.Plaintext
-	crpGen   *ring.UniformSampler
-	gauGen   *ring.GaussianSampler
-	seed 	 []byte
-	seeded   bool
-	pool     *ring.Poly
+type encryptorThread struct {
+	encoder ckks.Encoder
+	tmpPt   *ckks.Plaintext
+	crpGen  *ring.UniformSampler
+	gauGen  *ring.GaussianSampler
+	seed    []byte
+	seeded  bool
+	pool    *ring.Poly
 }
 
-func (enc *Encryptor) Seed(){
-	for i := range enc.thread{
+func (enc *Encryptor) Seed() {
+	for i := range enc.thread {
 		seed := make([]byte, 64)
 		if _, err := rand.Read(seed); err != nil {
 			log.Fatal(err)
@@ -46,16 +45,16 @@ func (enc *Encryptor) Seed(){
 	}
 }
 
-func (enc *Encryptor) GetSeeds() (seeds [][]byte){
+func (enc *Encryptor) GetSeeds() (seeds [][]byte) {
 	seeds = make([][]byte, len(enc.thread))
-	for i := range seeds{
+	for i := range seeds {
 		seeds[i] = make([]byte, len(enc.thread[i].seed))
 		copy(seeds[i], enc.thread[i].seed)
 	}
 	return
 }
 
-func (enc *Encryptor) newEncryptorThread() (*encryptorThread){
+func (enc *Encryptor) newEncryptorThread() *encryptorThread {
 	encoder := ckks.NewEncoder(enc.params)
 	tmpPt := ckks.NewPlaintext(enc.params, 0, enc.params.Scale())
 
@@ -73,13 +72,13 @@ func (enc *Encryptor) newEncryptorThread() (*encryptorThread){
 
 	pool := enc.baseRing.NewPoly()
 
-	return &encryptorThread{encoder:encoder, tmpPt:tmpPt, gauGen:gauGen, pool:pool}
+	return &encryptorThread{encoder: encoder, tmpPt: tmpPt, gauGen: gauGen, pool: pool}
 
 }
 
 // NewEncryptor creates a new Encryptor which is thread safe.
 func (c *Client) NewEncryptor(nbGoRoutines int) (enc *Encryptor) {
-	var err error 
+	var err error
 
 	enc = new(Encryptor)
 
@@ -92,7 +91,7 @@ func (c *Client) NewEncryptor(nbGoRoutines int) (enc *Encryptor) {
 	}
 
 	enc.thread = make([]*encryptorThread, nbGoRoutines)
-	for i := range enc.thread{
+	for i := range enc.thread {
 		enc.thread[i] = enc.newEncryptorThread()
 	}
 
@@ -102,18 +101,16 @@ func (c *Client) NewEncryptor(nbGoRoutines int) (enc *Encryptor) {
 // Encrypt encodes and encrypts list of slices of float64
 func (enc *Encryptor) Encrypt(worker, start, end int, values [][]float64) (ciphertexts []*ckks.Ciphertext) {
 
-
-	if !enc.thread[worker].seeded{
+	if !enc.thread[worker].seeded {
 		panic("encryptor must be seeded to be able to encrypt")
 	}
 
 	baseRing := enc.baseRing
 	encoder := enc.thread[worker].encoder
-	tmpPt   := enc.thread[worker].tmpPt
-	crpGen  := enc.thread[worker].crpGen
-	gauGen  := enc.thread[worker].gauGen
-	pool    := enc.thread[worker].pool
-
+	tmpPt := enc.thread[worker].tmpPt
+	crpGen := enc.thread[worker].crpGen
+	gauGen := enc.thread[worker].gauGen
+	pool := enc.thread[worker].pool
 
 	// Ciphertexts pool
 	ciphertexts = make([]*ckks.Ciphertext, len(values))

@@ -14,7 +14,7 @@ hash_size = 16
 
 def load_samples(hash_size):
     samples = []
-    with open('X_CGR_DCT', "rb") as f:
+    with open('X_CGR_DCT.binary', "rb") as f:
         data = f.read()
         nbfloat = len(data)>>3
         nbSamples = len(data)//(hash_size*hash_size*8)
@@ -150,6 +150,6 @@ def train_model():
             f.close()
         np.save('model/bias_layer_{}.npy'.format(i), weights[1])
 
-if __name__ == __main__:
-    #train_model()
+if __name__ == "__main__":
+    train_model()
     #evaluate_model(k=10)

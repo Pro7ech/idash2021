@@ -14,7 +14,7 @@ func main() {
 	time1 := time.Now()
 
 	var params *ckks.Parameters
-	if params, err = ckks.NewParametersFromModuli(lib.LogN,  &ckks.Moduli{Qi:lib.Q, Pi:[]uint64{}}); err != nil {
+	if params, err = ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi: lib.Q, Pi: []uint64{}}); err != nil {
 		panic(err)
 	}
 

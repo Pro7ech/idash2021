@@ -1,12 +1,11 @@
 package preprocessing
 
-
-import(
-	"testing"
+import (
 	"math/rand"
+	"testing"
 )
 
-func BenchmarkProcessing(b *testing.B){
+func BenchmarkProcessing(b *testing.B) {
 
 	hasher := NewDCTHasher(1, 8, 16)
 
@@ -15,12 +14,12 @@ func BenchmarkProcessing(b *testing.B){
 
 	//Create a random string of length 28000
 	d := make([]rune, 28000)
-	for i := range d{
+	for i := range d {
 
 		insert := rand.Float64()
-		if insert < 0.01{
+		if insert < 0.01 {
 			d[i] = runesRYKSMWN[rand.Intn(len(runesRYKSMWN))]
-		}else{
+		} else {
 			d[i] = runesACGT[rand.Intn(len(runesACGT))]
 		}
 	}
@@ -29,7 +28,7 @@ func BenchmarkProcessing(b *testing.B){
 
 	b.Run("CGR_256x256", func(b *testing.B) {
 
-		for i := 0; i < b.N; i++{
+		for i := 0; i < b.N; i++ {
 			hasher.MapCGR(0, strain)
 		}
 
@@ -37,7 +36,7 @@ func BenchmarkProcessing(b *testing.B){
 
 	b.Run("DCTII_256x256_16x16", func(b *testing.B) {
 
-		for i := 0; i < b.N; i++{
+		for i := 0; i < b.N; i++ {
 			hasher.DCTII(0)
 		}
 

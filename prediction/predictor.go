@@ -1,60 +1,59 @@
 package prediction
 
-import(
-	"os"
-	"fmt"
-	"math"
-	"unsafe"
-	"math/big"
+import (
 	"encoding/binary"
+	"fmt"
+	"github.com/ldsec/idash21_Task2/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
-	"github.com/ldsec/idash21_Task2/lib"
+	"math"
+	"math/big"
+	"os"
+	"unsafe"
 )
 
-type Predictor struct{
-	params *ckks.Parameters
+type Predictor struct {
+	params   *ckks.Parameters
 	baseRing *ring.Ring
-	model *Model
-	pool []*ring.Poly
+	model    *Model
+	pool     []*ring.Poly
 }
 
-type Model struct{
-	weights [][]float64
-	bias []float64
+type Model struct {
+	weights                 [][]float64
+	bias                    []float64
 	weightsScaledMontgomery [][]uint64
-	biasScaled []*ring.Poly
+	biasScaled              []*ring.Poly
 }
 
-func NewPredictor(schemeParams *ckks.Parameters)(*Predictor){
+func NewPredictor(schemeParams *ckks.Parameters) *Predictor {
 	ringQ, _ := ring.NewRing(schemeParams.N(), schemeParams.Qi())
 	pool := make([]*ring.Poly, lib.NbStrains)
-	for i := range pool{
+	for i := range pool {
 		pool[i] = ringQ.NewPoly()
 	}
-	return &Predictor{params:schemeParams, baseRing:ringQ, pool:pool}
+	return &Predictor{params: schemeParams, baseRing: ringQ, pool: pool}
 }
 
-func (p *Predictor) PrintModel(){
+func (p *Predictor) PrintModel() {
 	fmt.Println("==================== BIAS ===================")
 	fmt.Printf("%3d : ", 0)
-	for i := range p.model.bias{
+	for i := range p.model.bias {
 		fmt.Printf("%9.4f ", p.model.bias[i])
 	}
 	fmt.Printf("\n")
 
-
 	fmt.Println("================== WEIGHTS ==================")
-	for i := range p.model.weights[0]{
+	for i := range p.model.weights[0] {
 		fmt.Printf("%3d : ", i)
-		for j := range p.model.weights{
+		for j := range p.model.weights {
 			fmt.Printf("%9.4f ", p.model.weights[j][i])
 		}
 		fmt.Printf("\n")
 	}
 }
 
-func (p *Predictor) LoadModel(path string){
+func (p *Predictor) LoadModel(path string) {
 
 	nbStrains := lib.NbStrains
 	baseRing := p.baseRing
@@ -77,11 +76,11 @@ func (p *Predictor) LoadModel(path string){
 
 	weights := make([][]float64, lib.NbStrains)
 	weightsScaledMontgomery := make([][]uint64, lib.HashSize)
-	for i := range weights{
+	for i := range weights {
 		tmp0 := make([]float64, lib.HashSize)
 		tmp1 := make([]uint64, lib.HashSize)
-		for j := range tmp0{
-			tmp0[j] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i + j*nbStrains)<<3:(i + j*nbStrains+1)<<3]))
+		for j := range tmp0 {
+			tmp0[j] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i+j*nbStrains)<<3 : (i+j*nbStrains+1)<<3]))
 			tmp1[j] = ring.MForm(scaleUpExact(tmp0[j], lib.ModelScale, Q), Q, bredParams)
 
 		}
@@ -91,7 +90,6 @@ func (p *Predictor) LoadModel(path string){
 
 	p.model.weights = weights
 	p.model.weightsScaledMontgomery = weightsScaledMontgomery
-
 
 	if fr, err = os.Open(path + "bias_layer_0"); err != nil {
 		panic(err)
@@ -105,8 +103,8 @@ func (p *Predictor) LoadModel(path string){
 
 	bias := make([]float64, lib.NbStrains)
 	biasScaled := make([]*ring.Poly, lib.NbStrains)
-	for i := range bias{
-		bias[i] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i)<<3:(i+1)<<3]))
+	for i := range bias {
+		bias[i] = math.Float64frombits(binary.LittleEndian.Uint64(buff[(i)<<3 : (i+1)<<3]))
 
 		tmp := baseRing.NewPoly()
 		baseRing.AddScalar(tmp, scaleUpExact(bias[i], lib.HashScale*lib.ModelScale, Q), tmp)
@@ -119,15 +117,14 @@ func (p *Predictor) LoadModel(path string){
 	p.model.biasScaled = biasScaled
 }
 
-func (p *Predictor) Predict(input []*ckks.Ciphertext, output []*ckks.Ciphertext) (){
-	for i := range output{
+func (p *Predictor) Predict(input []*ckks.Ciphertext, output []*ckks.Ciphertext) {
+	for i := range output {
 		p.DotProduct(input, i, output[i])
 	}
 }
 
-
 // Multiplies a list of ciphertext with the weights of the given label and sums it all on the output ciphertext
-func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output *ckks.Ciphertext){
+func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output *ckks.Ciphertext) {
 
 	baseRing := p.baseRing
 
@@ -135,7 +132,7 @@ func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output 
 	bias := p.model.biasScaled[labelIndex]
 	pool := p.pool[labelIndex]
 
-	for i := range input{
+	for i := range input {
 
 		weight := weights[i]
 
@@ -159,14 +156,14 @@ func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output 
 			y[7] += x[7] * weight
 		}
 
-		if i%64 == 63 || i == len(input)-1{
+		if i%64 == 63 || i == len(input)-1 {
 			baseRing.InvMForm(pool, pool)
 			baseRing.Add(output.Value()[0], pool, output.Value()[0])
 			pool.Zero()
 		}
 	}
 
-	for i := range input{
+	for i := range input {
 
 		weight := weights[i]
 
@@ -190,7 +187,7 @@ func (p *Predictor) DotProduct(input []*ckks.Ciphertext, labelIndex int, output 
 			y[7] += x[7] * weight
 		}
 
-		if i%64 == 63 || i == len(input)-1{
+		if i%64 == 63 || i == len(input)-1 {
 			baseRing.InvMForm(pool, pool)
 			baseRing.Add(output.Value()[1], pool, output.Value()[1])
 			pool.Zero()
