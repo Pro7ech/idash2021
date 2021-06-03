@@ -73,7 +73,12 @@ func (dct *ParallelDCTII) Transform2D(worker int, matrix [][]float64) {
 
 func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 
-	if len(vec) > dct.n {
+	n := dct.n
+	roots := dct.roots
+	pool := dct.pool[worker]
+	scaling := dct.scaling
+
+	if len(vec) > n {
 		panic("vector too large for DCTII parameters")
 	}
 
@@ -81,19 +86,16 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 		panic("#worker larger than DCTII parameters")
 	}
 
-	roots := dct.roots
-	pool := dct.pool[worker]
-	scaling := dct.scaling
-
 	for i := 0; i < len(vec)>>1; i++ {
 		pool[i] = complex(vec[i*2], 0)
-		pool[dct.n-1-i] = complex(vec[i*2+1], 0)
+		pool[n-1-i] = complex(vec[i*2+1], 0)
 	}
 
-	sliceBitReverseInPlaceComplex128(pool, dct.n)
+	sliceBitReverseInPlaceComplex128(pool, n)
 
 	var halfm, gap int
-	for m := 2; m <= dct.n; m <<= 1 {
+	for m := 2; m <= n; m <<= 1 {
+		
 		halfm = m >> 1
 		gap = dct.n / m
 
@@ -101,7 +103,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 
 			psi0 := roots[0*gap]
 
-			for i := 0; i < dct.n; i += 16 {
+			for i := 0; i < n; i += 16 {
 				x := (*[16]complex128)(unsafe.Pointer(&pool[i]))
 				y := (*[16]complex128)(unsafe.Pointer(&pool[i]))
 
@@ -120,7 +122,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 			psi0 := roots[0*gap]
 			psi1 := roots[1*gap]
 
-			for i := 0; i < dct.n; i += 16 {
+			for i := 0; i < n; i += 16 {
 
 				x := (*[16]complex128)(unsafe.Pointer(&pool[i]))
 				y := (*[16]complex128)(unsafe.Pointer(&pool[i]))
@@ -142,7 +144,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 			psi2 := roots[2*gap]
 			psi3 := roots[3*gap]
 
-			for i := 0; i < dct.n; i += 16 {
+			for i := 0; i < n; i += 16 {
 
 				x := (*[16]complex128)(unsafe.Pointer(&pool[i]))
 				y := (*[16]complex128)(unsafe.Pointer(&pool[i]))
@@ -158,7 +160,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 			}
 
 		} else {
-			for i := 0; i < dct.n; i += m {
+			for i := 0; i < n; i += m {
 				for j := 0; j < halfm; j += 8 {
 
 					x := (*[8]complex128)(unsafe.Pointer(&pool[i+j]))
@@ -177,7 +179,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 		}
 	}
 
-	for i := 0; i < dct.n; i += 8 {
+	for i := 0; i < n; i += 8 {
 		x := (*[8]complex128)(unsafe.Pointer(&pool[i]))
 		y := (*[8]complex128)(unsafe.Pointer(&scaling[i]))
 		z := (*[8]float64)(unsafe.Pointer(&vec[i]))
