@@ -17,6 +17,11 @@ build:
 	${GOBUILD} ServerPred.go
 	${GOBUILD} ClientDec.go
 
+debug:
+	${GOBUILD} DebugTest.go
+	./DebugTest
+
+
 key:
 	./KeyGen 
 enc:

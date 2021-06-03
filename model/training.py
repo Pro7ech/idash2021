@@ -146,6 +146,34 @@ def train_model():
             f.close()
         np.save('model/bias_layer_{}.npy'.format(i), weights[1])
 
+def test_model():
+    from random import random
+    
+    X, Y = load_samples(hash_size)
+
+    weights = np.load('weights_layer_0.npy')
+    bias = np.load('bias_layer_0.npy')
+
+    err = 0
+    minmaxL = 10
+
+    for i in range(len(X)):
+        L = np.matmul(X[i], weights) + bias
+
+        idx = L.tolist().index(np.max(L))
+
+        minmaxL = min(minmaxL, L[idx])
+
+        if L[idx] < 0:
+            print(L)
+
+        if idx != Y[i].tolist().index(1):
+            err += 1
+
+    print(err)
+    print(minmaxL)
+
 if __name__ == "__main__":
-    train_model()
+    #train_model()
     #evaluate_model(k=10)
+    test_model()
