@@ -13,8 +13,10 @@ nb_samples = 8000
 hash_size = 16
 
 def load_samples(hash_size):
-    samples = []
-    with open('X_CGR_DCT.binary', "rb") as f:
+    X = []
+    Y = []
+    
+    with open('X.binary', "rb") as f:
         data = f.read()
         nbfloat = len(data)>>3
         nbSamples = len(data)//(hash_size*hash_size*8)
@@ -24,43 +26,43 @@ def load_samples(hash_size):
             buff = data[i*hash_size*hash_size<<3:(i+1)*(hash_size*hash_size)<<3]
             for j in range(hash_size*hash_size):
                     tmp[j] = struct.unpack('d', buff[j*8:(j+1)*8])[0]
-            samples += [tmp]
-    return np.array(samples)
+            X += [tmp]
+
+    with open('Y.binary', "rb") as f:
+        data = f.read()
+        for i in data:
+            tmp = [0, 0, 0, 0]
+            tmp[int(i)] = 1
+            Y += [tmp]
+    return np.array(X), np.array(Y)
 
 def evaluate_model(k):
 
-    X = load_samples(hash_size)
+    X, Y = load_samples(hash_size)
 
     nb_samples = len(X)
 
     features = len(X[0])
 
-    #Generates the labels
-    Y = []
-    Y += [[1, 0, 0, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 1, 0, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 0, 1, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 0, 0, 1] for i in range(nb_samples_per_strain)]
-
     #Shuffles
     available = [i for i in range(nb_samples)]
     shuffle(available)
 
-    x_all = []
-    y_all = []    
+    X_suffled = []
+    Y_suffled = []    
     for i in available:
-        x_all += [X[i]]
-        y_all += [Y[i]]
+        X_suffled += [X[i]]
+        Y_suffled += [Y[i]]
 
     split = nb_samples//k
 
     for i in range(k):
         print("k : {}/{}".format(i+1,k))
 
-        x_train = np.array(x_all[:nb_samples-split*(i+1)] + x_all[nb_samples-split*i:])
-        y_train = np.array(y_all[:nb_samples-split*(i+1)] + y_all[nb_samples-split*i:])
-        x_val = np.array(x_all[nb_samples-split*(i+1):nb_samples-split*i])
-        y_val = np.array(y_all[nb_samples-split*(i+1):nb_samples-split*i])
+        x_train = np.array(X_suffled[:nb_samples-split*(i+1)] + X_suffled[nb_samples-split*i:])
+        y_train = np.array(Y_suffled[:nb_samples-split*(i+1)] + Y_suffled[nb_samples-split*i:])
+        x_val = np.array(X_suffled[nb_samples-split*(i+1):nb_samples-split*i])
+        y_val = np.array(Y_suffled[nb_samples-split*(i+1):nb_samples-split*i])
 
         model = tf.keras.Sequential()
         model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
@@ -82,29 +84,23 @@ def train_model():
     #Remove irrelevant features to reduce the size of the model
     
     #Load the training data
-    X = load_samples(hash_size)
+    X, Y = load_samples(hash_size)
 
     features = len(X[0])
 
-    #Generates the labels
-    Y = []
-    Y += [[1, 0, 0, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 1, 0, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 0, 1, 0] for i in range(nb_samples_per_strain)]
-    Y += [[0, 0, 0, 1] for i in range(nb_samples_per_strain)]
 
     #Shuffles
     available = [i for i in range(nb_samples)]
     shuffle(available)
 
-    x_train = []
-    y_train = []    
+    X_suffled = []
+    Y_suffled = []    
     for i in available:
-        x_train += [X[i]]
-        y_train += [Y[i]]
+        X_suffled += [X[i]]
+        Y_suffled += [Y[i]]
 
-    x_train = np.array(x_train)
-    y_train = np.array(y_train)
+    X_suffled = np.array(X_suffled)
+    Y_suffled = np.array(Y_suffled)
 
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(4, activation='sigmoid', kernel_initializer='he_normal', input_shape=(features,)))
@@ -113,9 +109,9 @@ def train_model():
         loss='categorical_crossentropy',
         metrics='categorical_accuracy')
 
-    history = model.fit(x_train, y_train, epochs=1000, batch_size=32, verbose=2, validation_split=0.0)
+    history = model.fit(X_suffled, Y_suffled, epochs=1000, batch_size=32, verbose=2, validation_split=0.0)
 
-    predictions = model.predict(x_train, verbose=2)
+    predictions = model.predict(X_suffled, verbose=2)
 
     for i in range(len(model.layers)):
         layer = model.layers[i]

@@ -1,11 +1,11 @@
 package lib
 
 //Strain name map
-var StrainsMap = map[int]string{
-	0: "B.1.427",
-	1: "B.1.1.7",
-	2: "P.1",
-	3: "B.1.526",
+var StrainsMap = map[string]int{
+	"B.1.427": 0,
+	"B.1.1.7": 1,
+	"P.1": 2,
+	"B.1.526": 3,
 }
 
 // General parameters
