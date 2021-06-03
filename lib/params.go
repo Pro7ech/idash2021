@@ -4,7 +4,7 @@ package lib
 var StrainsMap = map[string]int{
 	"B.1.427": 0,
 	"B.1.1.7": 1,
-	"P.1": 2,
+	"P.1":     2,
 	"B.1.526": 3,
 }
 

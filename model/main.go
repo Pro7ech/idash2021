@@ -32,7 +32,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 
 	buffX := make([]byte, hashsqrtsize*hashsqrtsize*8)
-    buffY := make([]byte, nbGo)
+	buffY := make([]byte, nbGo)
 
 	// Creates the files containing the processed samples
 	var fwX, fwY *os.File
@@ -40,9 +40,9 @@ func main() {
 		panic(err)
 	}
 
-    if fwY, err = os.Create("./model/Y.binary"); err != nil{
-        panic(err)
-    }
+	if fwY, err = os.Create("./model/Y.binary"); err != nil {
+		panic(err)
+	}
 
 	hasher := preprocessing.NewDCTHasher(nbGo, window, hashsqrtsize)
 
@@ -50,16 +50,16 @@ func main() {
 
 	i := 0
 	dataX := make([]string, nbGo)
-    dataY := make([]string, nbGo)
+	dataY := make([]string, nbGo)
 	for scanner.Scan() {
 
-        if i&1 == 0{
-            dataY[(i>>1)%nbGo] = scanner.Text()
-            if i%200 == 0{
-                fmt.Printf("\rProcessing samples: %4d/%d", i>>1, nbSamples)
-            }
-            
-        }
+		if i&1 == 0 {
+			dataY[(i>>1)%nbGo] = scanner.Text()
+			if i%200 == 0 {
+				fmt.Printf("\rProcessing samples: %4d/%d", i>>1, nbSamples)
+			}
+
+		}
 
 		if i&1 == 1 {
 
@@ -83,34 +83,33 @@ func main() {
 						binary.LittleEndian.PutUint64(buffX[i<<3:(i+1)<<3], math.Float64bits(hash[i]))
 					}
 
-                    buffY[g] = uint8(MatchStrainNameToLabel(dataY[g]))
+					buffY[g] = uint8(MatchStrainNameToLabel(dataY[g]))
 
 					fwX.Write(buffX)
 				}
 
-                fwY.Write(buffY)
+				fwY.Write(buffY)
 			}
 		}
 		i++
 	}
 
-    fwX.Close()
-    fwY.Close()
+	fwX.Close()
+	fwY.Close()
 
 	fmt.Printf("\rProcessing samples: %4d/%d (%s)", nbSamples, nbSamples, time.Since(start))
 }
 
+func MatchStrainNameToLabel(substring string) (label int) {
 
-func MatchStrainNameToLabel(substring string) (label int){
+	strain := ""
+	for _, c := range substring[1:] {
+		if string(c) != "_" {
+			strain += string(c)
+		} else {
+			break
+		}
+	}
 
-    strain := ""
-    for _, c := range substring[1:]{
-        if string(c) != "_"{
-            strain += string(c)
-        }else{
-            break
-        }
-    }
-
-    return lib.StrainsMap[strain]
+	return lib.StrainsMap[strain]
 }

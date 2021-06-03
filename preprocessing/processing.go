@@ -108,7 +108,7 @@ func (dcth *DCTHasher) DCTII(worker int) {
 	hash := dcth.cgrhash[worker]
 	hsize := dcth.hsize
 
-	dcth.dct.Transform2D(worker, cgrmatrix)
+	dcth.dct.Transform2DToHash(worker, hsize, cgrmatrix)
 
 	for i := 0; i < hsize; i++ {
 		tmp := cgrmatrix[i]

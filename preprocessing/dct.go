@@ -71,6 +71,32 @@ func (dct *ParallelDCTII) Transform2D(worker int, matrix [][]float64) {
 	}
 }
 
+func (dct *ParallelDCTII) Transform2DToHash(worker, hashDim int, matrix [][]float64) {
+	// Transpose
+	for i := 0; i < len(matrix)-1; i++ {
+		for j := i + 1; j < len(matrix); j++ {
+			matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+		}
+	}
+
+	// DCT II
+	for i := range matrix {
+		dct.Transform1D(worker, matrix[i])
+	}
+
+	// Transpose
+	for i := 0; i < len(matrix)-1; i++ {
+		for j := i + 1; j < len(matrix); j++ {
+			matrix[i][j], matrix[j][i] = matrix[j][i], matrix[i][j]
+		}
+	}
+
+	// DCT II
+	for i := range matrix[:hashDim] {
+		dct.Transform1D(worker, matrix[i])
+	}
+}
+
 func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 
 	n := dct.n
@@ -95,7 +121,7 @@ func (dct *ParallelDCTII) Transform1D(worker int, vec []float64) {
 
 	var halfm, gap int
 	for m := 2; m <= n; m <<= 1 {
-		
+
 		halfm = m >> 1
 		gap = dct.n / m
 
