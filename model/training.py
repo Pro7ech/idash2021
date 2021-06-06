@@ -7,24 +7,23 @@ import matplotlib
 import matplotlib.cm as cm
 from scipy.special import softmax
 
-nb_samples_per_strain = 2000
-nb_strains = 4
-nb_samples = 8000
-hash_size = 16
+def load_samples(shuffle_samples):
 
-def load_samples(hash_size):
+    hash_size = 0
+    with open('params.binary', "rb") as f:
+        data = f.read()
+        hash_size = int(data[0])**2
+    
     X = []
     Y = []
-    
+    nb_samples = 0
     with open('X.binary', "rb") as f:
         data = f.read()
-        nbfloat = len(data)>>3
-        nbSamples = len(data)//(hash_size*hash_size*8)
-        for i in range(nbSamples):
-            tmp = [0.0 for i in range(hash_size*hash_size)]
-            idx = i*8*(hash_size*hash_size)
-            buff = data[i*hash_size*hash_size<<3:(i+1)*(hash_size*hash_size)<<3]
-            for j in range(hash_size*hash_size):
+        nb_samples = len(data)//(hash_size*8)
+        for i in range(nb_samples):
+            tmp = [0.0 for i in range(hash_size)]
+            buff = data[(i*hash_size)*8:(i+1)*hash_size*8]
+            for j in range(hash_size):
                     tmp[j] = struct.unpack('d', buff[j*8:(j+1)*8])[0]
             X += [tmp]
 
@@ -34,25 +33,26 @@ def load_samples(hash_size):
             tmp = [0, 0, 0, 0]
             tmp[int(i)] = 1
             Y += [tmp]
-    return np.array(X), np.array(Y)
+
+    if shuffle_samples:
+        available = [i for i in range(nb_samples)]
+        shuffle(available)
+        X_shuffled = []
+        Y_shuffled = []    
+        for i in available:
+            X_shuffled += [X[i]]
+            Y_shuffled += [Y[i]]
+        return np.array(X_shuffled), np.array(Y_shuffled)
+    else:
+        return np.array(X), np.array(Y)
 
 def evaluate_model(k):
 
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(True)
 
     nb_samples = len(X)
 
     features = len(X[0])
-
-    #Shuffles
-    available = [i for i in range(nb_samples)]
-    shuffle(available)
-
-    X_suffled = []
-    Y_suffled = []    
-    for i in available:
-        X_suffled += [X[i]]
-        Y_suffled += [Y[i]]
 
     split = nb_samples//k
 
@@ -70,7 +70,7 @@ def evaluate_model(k):
             optimizer='adam',
             loss='categorical_crossentropy',
             metrics='categorical_accuracy')
-        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=1000, batch_size=32, verbose=0)
+        history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=100, batch_size=32, verbose=0)
 
         for i in history.history.keys():
             print(i, history.history[i][-1])
@@ -84,34 +84,21 @@ def train_model():
     #Remove irrelevant features to reduce the size of the model
     
     #Load the training data
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(True)
 
+    nb_samples = len(X)
     features = len(X[0])
 
-
-    #Shuffles
-    available = [i for i in range(nb_samples)]
-    shuffle(available)
-
-    X_suffled = []
-    Y_suffled = []    
-    for i in available:
-        X_suffled += [X[i]]
-        Y_suffled += [Y[i]]
-
-    X_suffled = np.array(X_suffled)
-    Y_suffled = np.array(Y_suffled)
-
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(4, activation='sigmoid', kernel_initializer='he_normal', input_shape=(features,)))
+    model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
     model.compile(
         optimizer='adam',
         loss='categorical_crossentropy',
         metrics='categorical_accuracy')
 
-    history = model.fit(X_suffled, Y_suffled, epochs=1000, batch_size=32, verbose=2, validation_split=0.0)
+    history = model.fit(X, Y, epochs=1000, batch_size=16, verbose=2, validation_split=0.0)
 
-    predictions = model.predict(X_suffled, verbose=2)
+    predictions = model.predict(X, verbose=2)
 
     for i in range(len(model.layers)):
         layer = model.layers[i]
@@ -119,11 +106,25 @@ def train_model():
         weights = layer.get_weights()
 
         norm = matplotlib.colors.Normalize(vmin=np.min(weights[0]), vmax=np.max(weights[0]), clip=True)
-        mapper = cm.ScalarMappable(norm=norm, cmap=cm.seismic)
+        mapper = cm.ScalarMappable(norm=norm, cmap=cm.bwr)
 
-        array = np.array([[[round(i*255) for i in mapper.to_rgba(i)] for i in i] for i in weights[0]], dtype=np.uint8)
+
+        scaley = 80
+        scalex = 8
+        array = []
+        for j in range(len(weights[0].T)):
+            w = weights[0].T[j]
+            for k in range(scaley):
+                tmp0 = []
+                for xx in w:
+                    for u in range(scalex):
+                        tmp0 += [[round(i*255) for i in mapper.to_rgba(xx)]]
+
+                array += [tmp0]
+        
+        array = np.array(array, dtype=np.uint8)
         new_image = Image.fromarray(array)
-        new_image.save('model/weights_layer_{}.png'.format(i))
+        new_image.save('weights_layer_{}.png'.format(i))
 
         #Save both bias and weights in bianry and npy format
         data = []
@@ -131,49 +132,53 @@ def train_model():
         for j in range(len(flattened_weights)):
             data += struct.pack('d', flattened_weights[j])
 
-        with open("model/weights_layer_{}".format(i), "wb") as f:
+        with open("weights_layer_{}".format(i), "wb") as f:
             f.write(bytearray(data))
             f.close()
-        np.save('model/weights_layer_{}.npy'.format(i), weights[0])
+        np.save('weights_layer_{}.npy'.format(i), weights[0])
         
         data = []
         flattened_bias = weights[1].flatten()
         for j in range(len(flattened_bias)):
             data += struct.pack('d', flattened_bias[j])
 
-        with open("model/bias_layer_{}".format(i), "wb") as f:
+        with open("bias_layer_{}".format(i), "wb") as f:
             f.write(bytearray(data))
             f.close()
-        np.save('model/bias_layer_{}.npy'.format(i), weights[1])
+        np.save('bias_layer_{}.npy'.format(i), weights[1])
 
 def test_model():
     from random import random
     
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(False)
 
     weights = np.load('weights_layer_0.npy')
     bias = np.load('bias_layer_0.npy')
 
     err = 0
     minmaxL = 10
+    minL = 0
+    maxL = 0
 
     for i in range(len(X)):
         L = np.matmul(X[i], weights) + bias
 
+        minL = min(minL, np.min(L))
+        maxL = max(maxL, np.max(L))
+
         idx = L.tolist().index(np.max(L))
 
         minmaxL = min(minmaxL, L[idx])
-
-        if L[idx] < 0:
-            print(L)
 
         if idx != Y[i].tolist().index(1):
             err += 1
 
     print(err)
     print(minmaxL)
+    print("minL", minL)
+    print("maxL", maxL)
 
 if __name__ == "__main__":
-    #train_model()
+    train_model()
     #evaluate_model(k=10)
-    test_model()
+    #test_model()

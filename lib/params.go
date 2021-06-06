@@ -8,15 +8,17 @@ var StrainsMap = map[string]int{
 	"B.1.526": 3,
 }
 
-// General parameters
+// Parameters for the training
 var NbSamplesPerStrain = 2000
 var NbStrains = 4
 var NbSamples = NbStrains * NbSamplesPerStrain
 
 // Client pre-processing parameters
-var HashSqrtSize = 16
-var HashSize = HashSqrtSize * HashSqrtSize
-var Window = 8
+var HashSqrtSize = 12 // Dimension of the hash matrix
+var HashSize = HashSqrtSize * HashSqrtSize // Number of coefficients in the hash matrix
+var Window = 6     
+var Stride // TODO SINEM! :D
+var Normalizer = 1.0/5.0 // Applies x^(normalizer) to the coefficients of the Fractal Chaos Game Representation probability 
 
 // Parallelization parameters
 var NbGoRoutines = 4
@@ -24,7 +26,7 @@ var NbGoRoutines = 4
 // Crypto parameters
 var LogN uint64 = 10
 var Q = []uint64{0x20002801}
-var HashScale float64 = 1 << 16
-var ModelScale float64 = 7
+var HashScale float64 = 1 << 15
+var ModelScale float64 = 5
 var Sigma = 3.2
 var SigmaBound uint64 = 19

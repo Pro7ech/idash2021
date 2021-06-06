@@ -45,7 +45,7 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 	//*************************** GENOMES PRE-PROCESSING *******************************
 
 	// Chaos Game Representation + 2D Discret Cosine II hasher
-	hasher := preprocessing.NewDCTHasher(lib.NbGoRoutines, lib.Window, lib.HashSqrtSize)
+	hasher := preprocessing.NewDCTHasher(lib.NbGoRoutines, lib.Window, lib.HashSqrtSize, lib.Normalizer)
 
 	// Encryptor
 	encryptor := c.NewEncryptor(lib.NbGoRoutines)

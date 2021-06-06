@@ -12,7 +12,7 @@ import(
 )
 func main(){
 
-	nbGenomes := 2000
+	nbGenomes := 8000
 
 	// Key generation
 	var err error
@@ -85,12 +85,17 @@ func main(){
 
 	predictions = predictions[:nbGenomes]
 
+	fmt.Println(predictions[2001])
+
 	Ybyte := lib.FileToByteBuffer("model/Y.binary")
 
-	acc := 0
+	TP  := []int{0, 0, 0, 0}
+	TN  := []int{0, 0, 0, 0}
+	FP := []int{0, 0, 0, 0}
+	FN := []int{0, 0, 0, 0}
 	for i, pred := range predictions{
 		idx := 0
-		max := -10.0
+		max := -4294967296.0
 		for j,v := range pred{
 			if v > max{
 				idx = j
@@ -99,9 +104,44 @@ func main(){
 		}
 
 		if idx != int(Ybyte[i]){
-			acc++
+			FP[idx]++
+			for i := range FN{
+				if i != idx{
+					FN[i]++
+				}
+			}
+		}else{
+			TP[idx]++
+			for i := range TN{
+				if i != idx{
+					TN[i]++
+				}
+			}
 		}
 	}
+	fmt.Println("True  positives :", TP)
+	fmt.Println("True  Negatives :", TN)
+	fmt.Println("False Positives :", FP)
+	fmt.Println("False Negatives :", FN)
+	fmt.Println()
 
-	fmt.Printf("Accuracy : %f (%d errors)\n", 1-float64(acc)/float64(nbGenomes), acc)
+	macro := 0.0
+	microNum := 0.0
+	microDen := 0.0
+	for i := range TP{
+		macroNum := float64(TP[i])
+		macroDen := float64(TP[i] + FP[i])
+		if macroDen != 0{
+			macro += macroNum/macroDen
+		}
+		microNum += float64(TP[i])
+		microDen += float64(FP[i]+TP[i])
+	}
+
+	macro /= float64(4)
+
+	micro := microNum/microDen
+
+	fmt.Printf("Macro AUC: %f\n", macro)
+	fmt.Printf("Micro AUC: %f\n", micro)
 }
