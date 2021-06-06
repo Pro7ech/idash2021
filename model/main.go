@@ -15,14 +15,36 @@ import (
 
 func main() {
 
+	var err error
+
 	// Preprocessing for model training
 
-	nbSamples := lib.NbSamples
+	nbSamples := 8000
 	hashsqrtsize := lib.HashSqrtSize
-	window := lib.Window
+	window := lib.Window // SEE **** WARNING *****
+	normalizer := lib.Normalizer // applies x -> x^normalizer to the FCGR probability matrix
 	nbGo := 4
 
-	var err error
+	// Writes the processing parameters for the .py file training
+	var fwParams *os.File
+	if fwParams, err = os.Create("./model/params.binary"); err != nil{
+		panic(err)
+	}
+
+	fwParams.Write([]byte{uint8(hashsqrtsize)})
+	fwParams.Close()
+
+	// ****** WARNING *****
+
+	// If choosing this hasher, then the FCGR matrix will be of size  **** 4^window ****
+	// For this option, window can be either even or odd
+	hasher := preprocessing.NewDCTHasher(nbGo, window, hashsqrtsize, normalizer)
+
+	// If choosing this hasher then the FCGR matrix will of of size **** 2^(window+2) ****
+	// For this case window must ONLY be even 
+	//hasher := preprocessing.NewDCTHasherV2(nbGo, window, hashsqrtsize, normalizer)
+
+	
 	file, err := os.Open("./data/Challenge.fa")
 	if err != nil {
 		log.Fatal(err)
@@ -44,8 +66,7 @@ func main() {
 		panic(err)
 	}
 
-	hasher := preprocessing.NewDCTHasher(nbGo, window, hashsqrtsize)
-
+	
 	start := time.Now()
 
 	i := 0
@@ -58,7 +79,6 @@ func main() {
 			if i%200 == 0 {
 				fmt.Printf("\rProcessing samples: %4d/%d", i>>1, nbSamples)
 			}
-
 		}
 
 		if i&1 == 1 {
@@ -89,6 +109,10 @@ func main() {
 				}
 
 				fwY.Write(buffY)
+			}
+
+			if (i>>1) == nbSamples{
+				break
 			}
 		}
 		i++

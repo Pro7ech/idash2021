@@ -14,9 +14,10 @@ var NbStrains = 4
 var NbSamples = NbStrains * NbSamplesPerStrain
 
 // Client pre-processing parameters
-var HashSqrtSize = 16
+var HashSqrtSize = 12
 var HashSize = HashSqrtSize * HashSqrtSize
-var Window = 8
+var Window = 6
+var Normalizer = 1.0/5.0
 
 // Parallelization parameters
 var NbGoRoutines = 4
@@ -24,7 +25,7 @@ var NbGoRoutines = 4
 // Crypto parameters
 var LogN uint64 = 10
 var Q = []uint64{0x20002801}
-var HashScale float64 = 1 << 16
-var ModelScale float64 = 7
+var HashScale float64 = 1 << 15
+var ModelScale float64 = 5
 var Sigma = 3.2
 var SigmaBound uint64 = 19
