@@ -21,3 +21,13 @@ temps/
 keys/
 
 *.binary
+
+ClientDec
+
+ClientEnc
+
+DebugTest
+
+KeyGen
+
+ServerPred

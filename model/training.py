@@ -7,24 +7,23 @@ import matplotlib
 import matplotlib.cm as cm
 from scipy.special import softmax
 
-nb_samples_per_strain = 2000
-nb_strains = 4
-nb_samples = 8000
-hash_size = 12
+def load_samples(shuffle_samples):
 
-def load_samples(hash_size):
+    hash_size = 0
+    with open('params.binary', "rb") as f:
+        data = f.read()
+        hash_size = int(data[0])**2
+    
     X = []
     Y = []
-    
+    nb_samples = 0
     with open('X.binary', "rb") as f:
         data = f.read()
-        nbfloat = len(data)>>3
-        nbSamples = len(data)//(hash_size*hash_size*8)
-        for i in range(nbSamples):
-            tmp = [0.0 for i in range(hash_size*hash_size)]
-            idx = i*8*(hash_size*hash_size)
-            buff = data[i*hash_size*hash_size<<3:(i+1)*(hash_size*hash_size)<<3]
-            for j in range(hash_size*hash_size):
+        nb_samples = len(data)//(hash_size*8)
+        for i in range(nb_samples):
+            tmp = [0.0 for i in range(hash_size)]
+            buff = data[(i*hash_size)*8:(i+1)*hash_size*8]
+            for j in range(hash_size):
                     tmp[j] = struct.unpack('d', buff[j*8:(j+1)*8])[0]
             X += [tmp]
 
@@ -34,25 +33,26 @@ def load_samples(hash_size):
             tmp = [0, 0, 0, 0]
             tmp[int(i)] = 1
             Y += [tmp]
-    return np.array(X), np.array(Y)
+
+    if shuffle_samples:
+        available = [i for i in range(nb_samples)]
+        shuffle(available)
+        X_shuffled = []
+        Y_shuffled = []    
+        for i in available:
+            X_shuffled += [X[i]]
+            Y_shuffled += [Y[i]]
+        return np.array(X_shuffled), np.array(Y_shuffled)
+    else:
+        return np.array(X), np.array(Y)
 
 def evaluate_model(k):
 
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(True)
 
     nb_samples = len(X)
 
     features = len(X[0])
-
-    #Shuffles
-    available = [i for i in range(nb_samples)]
-    shuffle(available)
-
-    X_suffled = []
-    Y_suffled = []    
-    for i in available:
-        X_suffled += [X[i]]
-        Y_suffled += [Y[i]]
 
     split = nb_samples//k
 
@@ -84,22 +84,10 @@ def train_model():
     #Remove irrelevant features to reduce the size of the model
     
     #Load the training data
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(True)
 
+    nb_samples = len(X)
     features = len(X[0])
-
-    #Shuffles
-    available = [i for i in range(nb_samples)]
-    shuffle(available)
-
-    X_suffled = []
-    Y_suffled = []    
-    for i in available:
-        X_suffled += [X[i]]
-        Y_suffled += [Y[i]]
-
-    X_suffled = np.array(X_suffled)
-    Y_suffled = np.array(Y_suffled)
 
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer='he_normal', input_shape=(features,)))
@@ -108,9 +96,9 @@ def train_model():
         loss='categorical_crossentropy',
         metrics='categorical_accuracy')
 
-    history = model.fit(X_suffled, Y_suffled, epochs=1000, batch_size=16, verbose=2, validation_split=0.0)
+    history = model.fit(X, Y, epochs=1000, batch_size=16, verbose=2, validation_split=0.0)
 
-    predictions = model.predict(X_suffled, verbose=2)
+    predictions = model.predict(X, verbose=2)
 
     for i in range(len(model.layers)):
         layer = model.layers[i]
@@ -162,12 +150,10 @@ def train_model():
 def test_model():
     from random import random
     
-    X, Y = load_samples(hash_size)
+    X, Y = load_samples(False)
 
     weights = np.load('weights_layer_0.npy')
     bias = np.load('bias_layer_0.npy')
-
-    print(bias)
 
     err = 0
     minmaxL = 10
@@ -179,9 +165,6 @@ def test_model():
 
         minL = min(minL, np.min(L))
         maxL = max(maxL, np.max(L))
-
-        if i == 0:
-            print(L)
 
         idx = L.tolist().index(np.max(L))
 

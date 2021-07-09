@@ -25,6 +25,12 @@ func main() {
 	normalizer := lib.Normalizer // applies x -> x^normalizer to the FCGR probability matrix
 	nbGo := 4
 
+	fmt.Printf("Pre-processing\n")
+	fmt.Printf("Samples : %d\n", nbSamples)
+	fmt.Printf("Window : %d\n", window)
+	fmt.Printf("Normalizer : x^%f\n", normalizer)
+	fmt.Printf("Hashs Size : %d\n", hashsqrtsize*hashsqrtsize)
+
 	// Writes the processing parameters for the .py file training
 	var fwParams *os.File
 	if fwParams, err = os.Create("./model/params.binary"); err != nil{
@@ -121,7 +127,7 @@ func main() {
 	fwX.Close()
 	fwY.Close()
 
-	fmt.Printf("\rProcessing samples: %4d/%d (%s)", nbSamples, nbSamples, time.Since(start))
+	fmt.Printf("\rProcessing samples: %4d/%d (%s)\n", nbSamples, nbSamples, time.Since(start))
 }
 
 func MatchStrainNameToLabel(substring string) (label int) {
