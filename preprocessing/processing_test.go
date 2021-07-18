@@ -7,7 +7,7 @@ import (
 
 func BenchmarkProcessing(b *testing.B) {
 
-	hasher := NewDCTHasher(1, 8, 16)
+	hasher := NewDCTHasher(1, 8, 16, 1.0/5.0)
 
 	var runesACGT = []rune("ACGT")
 	var runesRYKSMWN = []rune("RYKSMWN")
