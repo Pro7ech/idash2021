@@ -215,7 +215,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 		lib.MarshalBatchSeeded32(lib.EncryptedBatchIndexPath(i), ciphertexts, encryptor.GetSeeds())
 	}
 
-	
 	fmt.Printf("\rEncrypting %4d Hashes  : %3d%% (%s)\n", nbGenomes, 100, time.Since(time1))
 	lib.PrintMemUsage()
 	fmt.Println()

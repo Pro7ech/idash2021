@@ -1,6 +1,6 @@
 package preprocessing
 
-import(
+import (
 	"math"
 )
 
@@ -21,13 +21,13 @@ func NewDCTHash(HashSqrtSize int) (hash []float64) {
 }
 
 type DCTHasher struct {
-	nbGo      int
-	window    int
-	hsize     int
+	nbGo       int
+	window     int
+	hsize      int
 	normalizer float64
-	dct       *ParallelDCTII
-	cgrmatrix []CRGMatrix
-	cgrhash   []DCTHash
+	dct        *ParallelDCTII
+	cgrmatrix  []CRGMatrix
+	cgrhash    []DCTHash
 }
 
 func NewDCTHasher(nbGo, window, hashsqrtsize int, normalizer float64) *DCTHasher {
@@ -45,18 +45,19 @@ func NewDCTHasher(nbGo, window, hashsqrtsize int, normalizer float64) *DCTHasher
 	}
 
 	return &DCTHasher{
-		nbGo: nbGo, 
-		window: window, 
-		hsize: hashsqrtsize, 
-		normalizer:normalizer, 
-		dct: dct, 
-		cgrmatrix: pool,
-		cgrhash: hash}
+		nbGo:       nbGo,
+		window:     window,
+		hsize:      hashsqrtsize,
+		normalizer: normalizer,
+		dct:        dct,
+		cgrmatrix:  pool,
+		cgrhash:    hash}
 }
 
 func (dcth *DCTHasher) Hash(worker int, dna string) {
 	dcth.MapCGR(worker, dna)
 	dcth.DCTII(worker)
+	dcth.Finalize(worker)
 }
 
 func (dcth *DCTHasher) MapCGR(worker int, dna string) {
@@ -118,10 +119,16 @@ func MapSubString2D(substring string) (x, y int) {
 func (dcth *DCTHasher) DCTII(worker int) {
 
 	cgrmatrix := dcth.cgrmatrix[worker]
-	hash := dcth.cgrhash[worker]
 	hsize := dcth.hsize
 
 	dcth.dct.Transform2DToHash(worker, hsize, cgrmatrix)
+}
+
+func (dcth *DCTHasher) Finalize(worker int) {
+
+	cgrmatrix := dcth.cgrmatrix[worker]
+	hash := dcth.cgrhash[worker]
+	hsize := dcth.hsize
 
 	for i := 0; i < hsize; i++ {
 		tmp := cgrmatrix[i]
@@ -133,17 +140,17 @@ func (dcth *DCTHasher) DCTII(worker int) {
 }
 
 type DCTHasherV2 struct {
-	nbGo      int
-	window    int
-	hsize     int
+	nbGo       int
+	window     int
+	hsize      int
 	normalizer float64
-	dct       *ParallelDCTII
-	mA 		  [][]float64
-	mC 		  [][]float64
-	mG 		  [][]float64
-	mT 		  [][]float64
-	cgrmatrix []CRGMatrix
-	cgrhash   []DCTHash
+	dct        *ParallelDCTII
+	mA         [][]float64
+	mC         [][]float64
+	mG         [][]float64
+	mT         [][]float64
+	cgrmatrix  []CRGMatrix
+	cgrhash    []DCTHash
 }
 
 func NewDCTHasherV2(nbGo, window, hashsqrtsize int, normalizer float64) *DCTHasherV2 {
@@ -156,7 +163,7 @@ func NewDCTHasherV2(nbGo, window, hashsqrtsize int, normalizer float64) *DCTHash
 	mG := make([][]float64, nbGo)
 	mT := make([][]float64, nbGo)
 	for i := range pool {
-		pool[i] = NewCRGMatrix(1+(window>>1))
+		pool[i] = NewCRGMatrix(1 + (window >> 1))
 		mA[i] = make([]float64, 1<<window)
 		mC[i] = make([]float64, 1<<window)
 		mG[i] = make([]float64, 1<<window)
@@ -169,16 +176,15 @@ func NewDCTHasherV2(nbGo, window, hashsqrtsize int, normalizer float64) *DCTHash
 	}
 
 	return &DCTHasherV2{
-		nbGo: nbGo, 
-		window: window, 
-		hsize: hashsqrtsize, 
-		normalizer:normalizer, 
-		dct: dct, cgrmatrix: 
-		pool, 
-		mA:mA, 
-		mC:mC, 
-		mG:mG, 
-		mT:mT, 
+		nbGo:       nbGo,
+		window:     window,
+		hsize:      hashsqrtsize,
+		normalizer: normalizer,
+		dct:        dct, cgrmatrix: pool,
+		mA:      mA,
+		mC:      mC,
+		mG:      mG,
+		mT:      mT,
 		cgrhash: hash}
 }
 
@@ -186,7 +192,6 @@ func (dcth *DCTHasherV2) Hash(worker int, dna string) {
 	dcth.MapCGR(worker, dna)
 	dcth.DCTII(worker)
 }
-
 
 func (dcth *DCTHasherV2) MapCGR(worker int, dna string) {
 
@@ -198,64 +203,64 @@ func (dcth *DCTHasherV2) MapCGR(worker int, dna string) {
 	mG := dcth.mA[worker]
 	mT := dcth.mA[worker]
 
-	for i := range mA{
+	for i := range mA {
 		mA[i] = 0.0
 		mC[i] = 0.0
 		mG[i] = 0.0
 		mT[i] = 0.0
 	}
 
-	xA,xC,xG,xT := MapSubStringTo4x1D(dna[0:0+window])
+	xA, xC, xG, xT := MapSubStringTo4x1D(dna[0 : 0+window])
 
 	mA[xA]++
 	mC[xC]++
 	mG[xG]++
 	mT[xT]++
 
-	mask := 1<<(window-1)
+	mask := 1 << (window - 1)
 
 	for j := window; j < len(dna); j++ {
-		
-		xA >>=1 
-		xC >>=1
-		xG >>=1 
-		xT >>=1
+
+		xA >>= 1
+		xC >>= 1
+		xG >>= 1
+		xT >>= 1
 
 		char := dna[j]
 
-		if char == 'A'{
+		if char == 'A' {
 			xA |= mask
-		}else if char == 'C'{
+		} else if char == 'C' {
 			xC |= mask
-		}else if char == 'G'{
+		} else if char == 'G' {
 			xG |= mask
-		}else if char == 'T'{
+		} else if char == 'T' {
 			xT |= mask
-		}else if char == 'R'{
+		} else if char == 'R' {
 			xA |= mask
 			xG |= mask
-		}else if char == 'Y'{
+		} else if char == 'Y' {
 			xC |= mask
 			xT |= mask
-		}else if char == 'K'{
+		} else if char == 'K' {
 			xG |= mask
 			xT |= mask
-		}else if char == 'M'{
+		} else if char == 'M' {
 			xA |= mask
 			xC |= mask
-		}else if char == 'S'{
+		} else if char == 'S' {
 			xC |= mask
 			xG |= mask
-		}else if char == 'W'{
+		} else if char == 'W' {
 			xA |= mask
 			xT |= mask
-		}else if char == 'N'{
+		} else if char == 'N' {
 			xA |= mask
 			xC |= mask
 			xG |= mask
 			xT |= mask
 		}
-	
+
 		mA[xA]++
 		mC[xC]++
 		mG[xG]++
@@ -267,29 +272,29 @@ func (dcth *DCTHasherV2) MapCGR(worker int, dna string) {
 	maxG := maxSlice(mG)
 	maxT := maxSlice(mT)
 
-	for i := range mA{
+	for i := range mA {
 		mA[i] = math.Pow(mA[i]/maxA, normalizer)
 	}
 
-	for i := range mA{
+	for i := range mA {
 		mC[i] = math.Pow(mC[i]/maxC, normalizer)
 	}
 
-	for i := range mA{
+	for i := range mA {
 		mG[i] = math.Pow(mG[i]/maxG, normalizer)
 	}
 
-	for i := range mA{
+	for i := range mA {
 		mT[i] = math.Pow(mT[i]/maxT, normalizer)
 	}
 
-	halfSize := (1<<(window>>1))
+	halfSize := (1 << (window >> 1))
 
-	for i := 0; i < (1<<(window>>1)); i++{
-		for j := 0; j < (1<<(window>>1)); j++{
-			cgrmatrix[i][j] = mA[i*halfSize + j]
-			cgrmatrix[i][j+halfSize] = mC[i*halfSize + j]
-			cgrmatrix[i+halfSize][j] = mG[i*halfSize + j]
+	for i := 0; i < (1 << (window >> 1)); i++ {
+		for j := 0; j < (1 << (window >> 1)); j++ {
+			cgrmatrix[i][j] = mA[i*halfSize+j]
+			cgrmatrix[i][j+halfSize] = mC[i*halfSize+j]
+			cgrmatrix[i+halfSize][j] = mG[i*halfSize+j]
 			cgrmatrix[i+halfSize][j+halfSize] = mT[i*halfSize+j]
 		}
 	}
@@ -312,47 +317,45 @@ func (dcth *DCTHasherV2) DCTII(worker int) {
 	}
 }
 
-
-func MapSubStringTo4x1D(substring string) (xA,xC,xG,xT int){
+func MapSubStringTo4x1D(substring string) (xA, xC, xG, xT int) {
 	i := 1
-	for _, char := range substring{
-		if char == 'A'{
+	for _, char := range substring {
+		if char == 'A' {
 			xA |= i
-		}else if char == 'C'{
+		} else if char == 'C' {
 			xC |= i
-		}else if char == 'G'{
+		} else if char == 'G' {
 			xG |= i
-		}else if char == 'T'{
+		} else if char == 'T' {
 			xT |= i
-		}else if char == 'R'{
+		} else if char == 'R' {
 			xA |= i
 			xG |= i
-		}else if char == 'Y'{
+		} else if char == 'Y' {
 			xC |= i
 			xT |= i
-		}else if char == 'K'{
+		} else if char == 'K' {
 			xG |= i
 			xT |= i
-		}else if char == 'M'{
+		} else if char == 'M' {
 			xA |= i
 			xC |= i
-		}else if char == 'S'{
+		} else if char == 'S' {
 			xC |= i
 			xG |= i
-		}else if char == 'W'{
+		} else if char == 'W' {
 			xA |= i
 			xT |= i
-		}else{
+		} else {
 			xA |= i
 			xC |= i
 			xG |= i
 			xT |= i
 		}
-		i<<=1
+		i <<= 1
 	}
 	return
 }
-
 
 func (dcth *DCTHasherV2) GetCGR(worker int) [][]float64 {
 	return dcth.cgrmatrix[worker]
@@ -370,10 +373,10 @@ func (dcth *DCTHasher) GetHash(worker int) []float64 {
 	return dcth.cgrhash[worker]
 }
 
-func maxSlice(slice []float64) (max float64){
+func maxSlice(slice []float64) (max float64) {
 	max = 0.0
-	for _, v := range slice{
-		if max < v{
+	for _, v := range slice {
+		if max < v {
 			max = v
 		}
 	}
