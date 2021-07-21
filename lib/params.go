@@ -14,15 +14,14 @@ var NbStrains = 4
 var NbSamples = NbStrains * NbSamplesPerStrain
 
 // Client pre-processing parameters
-var HashSqrtSize = 12                      // Dimension of the hash matrix
+var HashSqrtSize = 16                      // Dimension of the hash matrix
 var HashSize = HashSqrtSize * HashSqrtSize // Number of coefficients in the hash matrix
-var Window = 6
+var Window = 4
 
-//var Stride // TODO SINEM! :D
 var Normalizer = 1.0 / 5.0 // Applies x^(normalizer) to the coefficients of the Fractal Chaos Game Representation probability
 
 // Parallelization parameters
-var NbGoRoutines = 4
+var NbGoRoutines = 1
 
 // Crypto parameters
 var LogN uint64 = 10
