@@ -19,7 +19,7 @@ build:
 
 debug:
 	${GOBUILD} DebugTest.go
-	./DebugTest
+	./DebugTest ${NBGENOMES}
 
 
 key:

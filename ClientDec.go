@@ -23,22 +23,18 @@ func main() {
 	decryptor := client.NewDecryptor()
 
 	// Reads the number of genomes
-	var fr *os.File
-	if fr, err = os.Open(lib.NbBatchToPredict); err != nil {
-		panic(err)
-	}
+	nbGenomes := int(binary.LittleEndian.Uint64(lib.FileToByteBuffer(lib.NbBatchToPredict)[8:]))
 
-	buff := make([]byte, 16)
-	if _, err := fr.Read(buff); err != nil {
-		panic(err)
-	}
-
-	nbGenomes := int(binary.LittleEndian.Uint64(buff[8:]))
-
+	// Extracts the number of batches
 	nbBatches := int(math.Ceil(float64(nbGenomes) / float64(int(1<<lib.LogN))))
 
+	// Decrypts the batch and returns a matrix
+	//
+	//                    Score
+	// ID0 [strain0, strain1, strain2, strain3],
+	// ID1 [                ...               ],
+	//
 	predictions := [][]float64{}
-
 	for i := 0; i < nbBatches; i++ {
 		ciphertexts := lib.UnmarshalBatch32(lib.EncryptedBatchPredIndexPath(i))
 		predictions = append(predictions, decryptor.DecryptBatchTranspose(ciphertexts)...)
@@ -46,6 +42,7 @@ func main() {
 
 	predictions = predictions[:nbGenomes]
 
+	// Writes the scores in a .csv file
 	resf, err := os.Open(lib.GenomeDataPath)
 	if err != nil {
 		log.Fatal(err)

@@ -21,10 +21,10 @@ func main() {
 	client := client.NewClient()
 
 	// 1) Opens the file containing genomes
-	// 		- Except a file where odd indexes are the genome ID
-	// 		  and even indexes are the genome data
+	// 		- Except a file where even indexes are the genome ID
+	// 		  and odd indexes are the genome data
 	// 2) Processes the first xx genomes
-	// 3) Encrypts the processed genomes by batch of 1<<lib.LogN
+	// 3) Encrypts the processed genomes by batches of 1<<lib.LogN
 	// 4) Saves each batch in a separate file in temp/enc_client_batch_{i}.binary
 	client.ProcessAndEncrypt(lib.GenomeDataPath, nbGenomes)
 }

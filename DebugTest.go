@@ -9,11 +9,17 @@ import (
 	"github.com/ldsec/lattigo/v2/ckks"
 	"os"
 	"time"
+	"strconv"
 )
 
 func main() {
 
-	nbGenomes := 8000
+	args := os.Args[1:]
+	if len(args) == 0 {
+		panic("NEED NBGENOMES")
+	}
+
+	nbGenomes, _ := strconv.Atoi(args[0])
 
 	// Key generation
 	var err error
@@ -84,8 +90,6 @@ func main() {
 
 	predictions = predictions[:nbGenomes]
 
-	fmt.Println(predictions[2001])
-
 	Ybyte := lib.FileToByteBuffer("model/Y.binary")
 
 	TP := []int{0, 0, 0, 0}
@@ -138,7 +142,6 @@ func main() {
 	}
 
 	macro /= float64(4)
-
 	micro := microNum / microDen
 
 	fmt.Printf("Macro AUC: %f\n", macro)

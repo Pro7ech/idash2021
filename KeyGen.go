@@ -13,11 +13,13 @@ func main() {
 
 	time1 := time.Now()
 
+	// Generates CKKS parameters
 	var params *ckks.Parameters
 	if params, err = ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi: lib.Q, Pi: []uint64{}}); err != nil {
 		panic(err)
 	}
 
+	// Generates a Gaussian secret-key
 	kgen := ckks.NewKeyGenerator(params)
 	sk := kgen.GenSecretKeyGaussian()
 
