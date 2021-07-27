@@ -9,25 +9,31 @@ import (
 	"log"
 	"math"
 	"os"
-	"strconv"
+	"encoding/binary"
 )
 
 func main() {
 
 	var err error
 
-	args := os.Args[1:]
-	if len(args) == 0 {
-		panic("NEED NBGENOMES")
-	}
-
-	nbGenomes, _ := strconv.Atoi(args[0])
-
 	// Creates a new client
 	// Expect a secret-key in key/
 	client := client.NewClient()
 
 	decryptor := client.NewDecryptor()
+
+	// Reads the number of genomes
+	var fr *os.File
+	if fr, err = os.Open(lib.NbBatchToPredict); err != nil {
+		panic(err)
+	}
+
+	buff := make([]byte, 16)
+	if _, err := fr.Read(buff); err != nil {
+		panic(err)
+	}
+
+	nbGenomes := int(binary.LittleEndian.Uint64(buff[8:]))
 
 	nbBatches := int(math.Ceil(float64(nbGenomes) / float64(int(1<<lib.LogN))))
 

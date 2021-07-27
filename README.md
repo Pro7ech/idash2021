@@ -7,7 +7,7 @@ by Chaos Game Representation of Sequences_), followed by a 2D DCTII (_A perceptu
 The top left HashSqrtSize x HashSqrtSize matrix of the DCTII (highest frequencies) is extracted and set at the hash of the genome.
 
 `$ go run model/main.go` will process the samples the results in `model/`.
-The training processing parameters can be set in `lib/params.go`.
+The processing parameters can be set in `lib/params.go`.
 
 ## Training
 
@@ -15,15 +15,14 @@ Run the python script in `model/training.py`, adapt the training parameters as s
 The script will output the weights both in `.npy` and `.binary` as well as a `.png` image
 of the weights/features with gradiant color coding.
 
-
 ## Testing
-`$ make debug` will compile and run `DebugTest.go` which will process, encrypt, predict, decrypt the training data
+`$ make debug NBGENOMES=2000` will compile and run `DebugTest.go` which will process, encrypt, predict, decrypt the first 2000 samples located in `data/Challenge.fa`.
 
 ## Run iDash21
-- `$ make key` : generate the secret-key, stores it in `key/`
-- `$ make enc` : process,  encrypts and marshals the samples (for now targets the training data `data/Challenge.fa`)
-- `$ make pred` : unmarshal the encrypted samples, homomorphic prediction and marshalling of the result
-- `$ make dec` : unmarshal and decrypts the result
+- `$ make key` : generate the secret-key, stores it in `key/`.
+- `$ make enc NBGENOMES=2000` : process,  encrypts and marshals the first 2000 samples located in `data/Challenge.fa`.
+- `$ make pred` : unmarshal the encrypted samples, homomorphic prediction and marshalling of the result.
+- `$ make dec` : unmarshals, decrypts and outputs the result in `results/prediction.csv`.
 
 ## Others
-- `$ make clean` : clean all files in `keys/`, `temps/` and all compiled binary files. Does not clean files in `model/`.
+- `$ make clean` : clean all files in `keys/`, `temps/`,`results/` and all compiled binary files. Does not clean files in `model/`.

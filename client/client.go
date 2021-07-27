@@ -169,6 +169,8 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 	buff := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buff, uint64(nbBatches))
 	fw.Write(buff)
+	binary.LittleEndian.PutUint64(buff, uint64(nbGenomes))
+	fw.Write(buff)
 
 	// Number of ciphertext per Go routine
 	nbCipherPerGoRoutine := int(math.Ceil(float64(lib.HashSize) / float64(lib.NbGoRoutines)))
