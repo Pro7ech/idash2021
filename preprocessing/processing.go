@@ -120,7 +120,6 @@ func (dcth *DCTHasher) DCTII(worker int) {
 
 	cgrmatrix := dcth.cgrmatrix[worker]
 	hsize := dcth.hsize
-
 	dcth.dct.Transform2DToHash(worker, hsize, cgrmatrix)
 }
 

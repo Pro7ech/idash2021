@@ -25,7 +25,7 @@ debug:
 key:
 	./KeyGen 
 enc:
-	./ClientEnc 
+	./ClientEnc ${NBGENOMES}
 pred:
 	./ServerPred 
 dec:

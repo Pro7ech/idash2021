@@ -10,6 +10,7 @@ func main() {
 
 	cleanFolder("keys/")
 	cleanFolder("temps/")
+	cleanFolder("results/")
 
 	//if err := os.Remove("results/curve.png"); err != nil {
 	//	log.Println(err)

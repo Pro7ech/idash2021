@@ -6,6 +6,8 @@ from PIL import Image
 import matplotlib
 import matplotlib.cm as cm
 from scipy.special import softmax
+import matplotlib.pyplot as plt
+from tensorflow.keras import layers, initializers, regularizers, optimizers, callbacks
 
 def load_samples(shuffle_samples):
 
@@ -96,7 +98,7 @@ def train_model():
         loss='categorical_crossentropy',
         metrics='categorical_accuracy')
 
-    history = model.fit(X, Y, epochs=1000, batch_size=16, verbose=2, validation_split=0.0)
+    history = model.fit(X, Y, epochs=100, batch_size=8, verbose=2, validation_split=0.0)
 
     predictions = model.predict(X, verbose=2)
 
@@ -146,39 +148,126 @@ def train_model():
             f.write(bytearray(data))
             f.close()
         np.save('bias_layer_{}.npy'.format(i), weights[1])
+        
+def final_model():
+    ki = 'he_normal'
+    bs = 8
+    #regularizers
+    l1=1e-7
+    l2=1e-6
+    #early stopping
+    callback = callbacks.EarlyStopping(monitor='loss', patience=50)
+    
+    #Load the training data
+    X, Y = load_samples(True)
+    
+    nb_samples = len(X)
+    features = len(X[0])
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer=ki, input_shape=(features,),kernel_regularizer=regularizers.l1_l2(l1=l1, l2=l2)))
+    model.compile(
+        optimizer="adam",
+        loss='categorical_crossentropy',
+        metrics='categorical_accuracy')
+    
+    print("results with featuers= ",features,", kernel_initializer = ", ki, ", batch_size = ", bs)
+    
+    history = model.fit(X, Y, epochs=100, batch_size=bs, verbose=2, validation_split=0.1, callbacks=[callback])
+    
+    # summarize history for accuracy
+    plt.plot(history.history['categorical_accuracy'])
+    plt.plot(history.history['val_categorical_accuracy'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'valid'], loc='upper left')
+    plt.show()
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'valid'], loc='upper left')
+    plt.show()
+    
+    #Save both bias and weights in bianry and npy format
+    layer = model.layers[0]
+    weights = layer.get_weights()
+    data = []
+    flattened_weights = weights[0].flatten()
+    for j in range(len(flattened_weights)):
+        data += struct.pack('d', flattened_weights[j])
 
+    with open("weights_layer_{}".format(0), "wb") as f:
+        f.write(bytearray(data))
+        f.close()
+    np.save('weights_layer_{}.npy'.format(0), weights[0])
+    
+    data = []
+    flattened_bias = weights[1].flatten()
+    for j in range(len(flattened_bias)):
+        data += struct.pack('d', flattened_bias[j])
+
+    with open("bias_layer_{}".format(0), "wb") as f:
+        f.write(bytearray(data))
+        f.close()
+    np.save('bias_layer_{}.npy'.format(0), weights[1])
+    
 def test_model():
     from random import random
     
     X, Y = load_samples(False)
 
+    bitsX = 5
+    
+    X *= (1<<bitsX)
+    X = np.round(X)
+    X /= (1<<bitsX)
+
     weights = np.load('weights_layer_0.npy')
     bias = np.load('bias_layer_0.npy')
 
+    bitsW = 5
+    
+    weights *= (1<<bitsW)
+    weights = np.round(weights)
+    weights /= (1<<bitsW)
+
+    bias *= (1<<bitsW)
+    bias = np.round(bias)
+    bias /= (1<<bitsW)
+
+    print(weights[0])
+
     err = 0
-    minmaxL = 10
+    minDiff = 10
     minL = 0
     maxL = 0
 
     for i in range(len(X)):
+        
         L = np.matmul(X[i], weights) + bias
-
-        minL = min(minL, np.min(L))
-        maxL = max(maxL, np.max(L))
-
         idx = L.tolist().index(np.max(L))
 
-        minmaxL = min(minmaxL, L[idx])
+        L = L.tolist()
+        L.sort()
+        L= L[::-1]
+    
+        minL = min(minL, L[-1])
+        maxL = max(maxL, L[0])
+        minDiff = min(minDiff, L[0]-L[1])
 
         if idx != Y[i].tolist().index(1):
             err += 1
 
-    print(err)
-    print(minmaxL)
+    print("errors :", err)
     print("minL", minL)
     print("maxL", maxL)
+    print("minDiff", minDiff)
 
 if __name__ == "__main__":
-    train_model()
+    #train_model()
     #evaluate_model(k=10)
-    #test_model()
+    #final_model()
+    test_model()

@@ -16,7 +16,7 @@ func NewServer() (server *Server) {
 	params, _ := ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi: lib.Q, Pi: []uint64{}})
 	predictor := prediction.NewPredictor(params)
 	predictor.LoadModel(lib.ModelPath)
-	predictor.PrintModel()
+	//predictor.PrintModel()
 	return &Server{params: params, predictor: predictor}
 }
 

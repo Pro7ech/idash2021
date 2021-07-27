@@ -95,7 +95,9 @@ func main() {
 				wg.Add(nbGo)
 				for g := 0; g < nbGo; g++ {
 					go func(worker int, strain string) {
-						hasher.Hash(worker, strain)
+						hasher.MapCGR(worker, strain)
+						hasher.DCTII(worker)
+						hasher.Finalize(worker)
 						wg.Done()
 					}(g, dataX[g])
 				}
