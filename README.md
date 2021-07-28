@@ -1,28 +1,32 @@
 # iDash 2021 Task2
 
-## Processing Training Samples
+## Processing Samples
 
-Samples are pre-processed by first applying a FCGR mapping (_Genomic Signature: Characterization and Classification of Species Assessed
-by Chaos Game Representation of Sequences_), followed by a 2D DCTII (_A perceptual hash function to store and retrieve large scale DNA sequences_).
-The top left HashSqrtSize x HashSqrtSize matrix of the DCTII (highest frequencies) is extracted and set at the hash of the genome.
-
-`$ go run model/main.go` will process the samples the results in `model/`.
-The processing parameters can be set in `lib/params.go`.
+Samples are pre-processed by first applying a FCGR mapping, followed by a 2D DCTII [Lichtblau2019].
+The top left h x h matrix of the DCTII (highest frequencies) is extracted and set at the hash of the genome.
 
 ## Training
 
-Run the python script in `model/training.py`, adapt the training parameters as see fit.
-The script will output the weights both in `.npy` and `.binary` as well as a `.png` image
-of the weights/features with gradiant color coding.
+`$ go run model/main.go` will process the samples of `data/Challenge.fa` and output the processed samples in in `model/X.binary` `model/Y.binary` (X being the processed samples and Y the labels).
+The Python script `model/training.py` will use `model/X.binary` `model/Y.binary` that can then be used to train the model.
+The script will output the weights both in `.npy` and `.binary` as well as a `.png` image.
+of the weights/features with gradient color coding.
 
 ## Testing
 `$ make debug NBGENOMES=2000` will compile and run `DebugTest.go` which will process, encrypt, predict, decrypt the first 2000 samples located in `data/Challenge.fa`.
 
 ## Run iDash21
-- `$ make key` : generate the secret-key, stores it in `key/`.
-- `$ make enc NBGENOMES=2000` : process,  encrypts and marshals the first 2000 samples located in `data/Challenge.fa`.
-- `$ make pred` : unmarshal the encrypted samples, homomorphic prediction and marshalling of the result.
-- `$ make dec` : unmarshals, decrypts and outputs the result in `results/prediction.csv`.
+- `$ make key` : generates the secret-key and stores it in `key/`.
+- `$ make enc NBGENOMES=2000` : processes,  encrypts and marshals the first 2000 samples located in `data/Challenge.fa`. Then returns the encrypted processed samples in `temp/`.
+- `$ make pred` : unmarshals the encrypted samples in  `temp/`, evaluates the homomorphic prediction and marshals back the result in `temp/`.
+- `$ make dec` : unmarshals the encrypted prediction in `temp/`, decrypts and outputs the result in `results/prediction.csv`.
 
 ## Others
 - `$ make clean` : clean all files in `keys/`, `temps/`,`results/` and all compiled binary files. Does not clean files in `model/`.
+
+## Security
+The HE evaluation security is based on the R-LWE hardness. The used parameters are log(N)=10, log(Q)=29. Both the secret and the Gaussian error are sampled from a truncated discrete Gaussian distribution with standard deviation 3.19 and bound 19. The security is estimated to 128-bit according to https://homomorphicencryption.org/.
+
+
+## References:
+[Lichtblau2019] : Lichtblau Daniel. “Alignment-free genomic sequence comparison using FCGRand signal processing”, 2019.
