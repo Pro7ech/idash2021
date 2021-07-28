@@ -21,6 +21,9 @@ of the weights/features with gradient color coding.
 - `$ make pred` : unmarshals the encrypted samples in  `temp/`, evaluates the homomorphic prediction and marshals back the result in `temp/`.
 - `$ make dec` : unmarshals the encrypted prediction in `temp/`, decrypts and outputs the result in `results/prediction.csv`.
 
+## Parameters
+Processing and crypto parameters are located in `lib/params`.
+
 ## Others
 - `$ make clean` : clean all files in `keys/`, `temps/`,`results/` and all compiled binary files. Does not clean files in `model/`.
 
