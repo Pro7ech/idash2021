@@ -1,20 +1,20 @@
 package server
 
 import (
-	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/idash21_Task2/prediction"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
+	"github.com/ldsec/idash21_Task2/prediction/predictor"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"sync"
 )
 
 type Server struct {
 	params    *ckks.Parameters
-	predictor *prediction.Predictor
+	predictor *predictor.Predictor
 }
 
 func NewServer() (server *Server) {
 	params, _ := ckks.NewParametersFromModuli(lib.LogN, &ckks.Moduli{Qi: lib.Q, Pi: []uint64{}})
-	predictor := prediction.NewPredictor(params)
+	predictor := predictor.NewPredictor(params)
 	predictor.LoadModel(lib.ModelPath)
 	//predictor.PrintModel()
 	return &Server{params: params, predictor: predictor}

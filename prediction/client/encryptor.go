@@ -2,7 +2,7 @@ package client
 
 import (
 	"crypto/rand"
-	"github.com/ldsec/idash21_Task2/lib"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"github.com/ldsec/lattigo/v2/ring"
 	"github.com/ldsec/lattigo/v2/utils"

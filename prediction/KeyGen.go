@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ldsec/idash21_Task2/lib"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"os"
 	"time"

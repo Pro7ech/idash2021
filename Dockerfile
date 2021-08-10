@@ -1,4 +1,4 @@
-FROM golang:1.12
+FROM golang:1.16
 
 COPY . /root/idash21_Track2
 

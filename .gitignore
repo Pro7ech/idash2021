@@ -1,20 +1,7 @@
 
-data/Challenge.fa
-
-data/X_CGR_DCT
-
-model/bias_layer_0
-
-model/bias_layer_0.npy
-
-model/weights_layer_0
-
-model/weights_layer_0.npy
-
-model/weights_layer_0.png
-
-
 temps/
+
+*.fa
 
 *.exe
 

@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/idash21_Task2/preprocessing"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
+	"github.com/ldsec/idash21_Task2/prediction/preprocessing"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"log"
 	"math"
@@ -67,8 +67,8 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 	scanner := bufio.NewScanner(file)
 
 	i := 0
-	data := make([]string, lib.NbGoRoutines)
-	remain := nbGenomes % lib.NbGoRoutines
+	data := make([]string, 1)
+	remain := nbGenomes % 1
 	time1 := time.Now()
 	for scanner.Scan() {
 
@@ -82,13 +82,13 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 		if i&1 == 1 && (i>>1) < nbGenomes {
 
 			// Assigns a genome to the data list
-			data[(i>>1)%lib.NbGoRoutines] = scanner.Text()
+			data[(i>>1)%1] = scanner.Text()
 
 			// Once data list is filled process the genomes
 			// or if reached the last genome, processes the data list
-			if (i>>1)%lib.NbGoRoutines == lib.NbGoRoutines-1 || (i>>1) == nbGenomes-1 {
+			if (i>>1)%1 == 0 || (i>>1) == nbGenomes-1 {
 
-				nbToProcess := lib.NbGoRoutines
+				nbToProcess := 1
 				if (i>>1) == nbGenomes-1 && remain != 0 {
 					nbToProcess = remain
 				}

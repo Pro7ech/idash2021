@@ -1,4 +1,4 @@
-package prediction
+package predictor
 
 import (
 	"math"

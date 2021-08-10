@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ldsec/idash21_Task2/client"
-	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/idash21_Task2/server"
+	"github.com/ldsec/idash21_Task2/prediction/client"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
+	"github.com/ldsec/idash21_Task2/prediction/server"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"os"
 	"time"

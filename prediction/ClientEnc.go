@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/ldsec/idash21_Task2/client"
-	"github.com/ldsec/idash21_Task2/lib"
+	"github.com/ldsec/idash21_Task2/prediction/client"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"os"
 	"strconv"
 )

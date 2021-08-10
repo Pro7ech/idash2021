@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/binary"
-	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/idash21_Task2/server"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
+	"github.com/ldsec/idash21_Task2/prediction/server"
 	"time"
 	"fmt"
 )
