@@ -1,16 +1,22 @@
-# iDash 2021 Task2
+# EPFL solution for iDash 2021 Task2
+
+## How to build the Docker
+
+```
+docker build -t epfl_solution .
+docker run -it epfl_solution
+```
 
 ## Processing Samples
 
 Samples are pre-processed by first applying a FCGR mapping, followed by a 2D DCTII [Lichtblau2019].
-The top left h x h matrix of the DCTII (highest frequencies) is extracted and set at the hash of the genome.
+The top left h x h matrix of the DCTII (lowest frequencies) is extracted and set at the hash of the genome.
 
 ## Training
 
-`$ go run model/main.go` will process the samples of `data/Challenge.fa` and output the processed samples in in `model/X.binary` `model/Y.binary` (X being the processed samples and Y the labels).
+`$ go run model/main.go` will process the samples of `data/Challenge.fa` and output the processed samples in `model/X.binary` `model/Y.binary` (X being the processed samples and Y the labels).
 The Python script `model/training.py` will use `model/X.binary` `model/Y.binary` that can then be used to train the model.
-The script will output the weights both in `.npy` and `.binary` as well as a `.png` image.
-of the weights/features with gradient color coding.
+The script will output the weights both in `.npy` and `.binary` as well as a `.png` image of the weights/features with gradient color coding.
 
 ## Testing
 `$ make debug NBGENOMES=2000` will compile and run `DebugTest.go` which will process, encrypt, predict, decrypt the first 2000 samples located in `data/Challenge.fa`.

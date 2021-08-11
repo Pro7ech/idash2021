@@ -23,13 +23,13 @@ debug:
 
 
 key:
-	./KeyGen 
+	/usr/bin/time -v ./KeyGen 
 enc:
-	./ClientEnc ${NBGENOMES}
+	/usr/bin/time -v ./ClientEnc ${NBGENOMES}
 pred:
-	./ServerPred 
+	/usr/bin/time -v ./ServerPred 
 dec:
-	./ClientDec ${NBGENOMES}
+	/usr/bin/time -v ./ClientDec ${NBGENOMES}
 
 clean:
 	${GOBUILD} Clean.go
