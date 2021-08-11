@@ -1,17 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"os"
-	"time"
 )
 
 func main() {
 	var err error
-
-	time1 := time.Now()
 
 	// Generates CKKS parameters
 	var params *ckks.Parameters
@@ -22,10 +18,6 @@ func main() {
 	// Generates a Gaussian secret-key
 	kgen := ckks.NewKeyGenerator(params)
 	sk := kgen.GenSecretKeyGaussian()
-
-	lib.PrintMemUsage()
-	time2 := time.Now()
-	fmt.Printf("[Key Generation] key generation done %f s\n", time2.Sub(time1).Seconds())
 
 	// Marshal SecretKey
 	var fwSk *os.File

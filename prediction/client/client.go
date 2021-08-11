@@ -11,7 +11,6 @@ import (
 	"math"
 	"os"
 	"sync"
-	"time"
 )
 
 type Client struct {
@@ -69,7 +68,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 	i := 0
 	data := make([]string, 1)
 	remain := nbGenomes % 1
-	time1 := time.Now()
 	for scanner.Scan() {
 
 		if i%20 == 0 && (i>>1) < nbGenomes {
@@ -134,10 +132,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 		}
 	}
 
-	fmt.Printf("\rProcessing %4d Genomes : %3d%% (%s)\n", nbGenomes, 100, time.Since(time1))
-	lib.PrintMemUsage()
-	fmt.Println()
-
 	//fmt.Println(hashes[0])
 
 	//fmt.Println(hashTransposed[0][len(hashTransposed[0])-1])
@@ -147,8 +141,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 
 	// We need to encrypt a HashSize x nbGenomes matrix where the i-th row of the
 	// matrix is the i-th coefficient of the hash of each genome
-
-	time1 = time.Now()
 
 	// We encrypt batches of N hashes, each i-th coefficient of the N hashes
 	// being stored in its own ciphertext, hence hashSize ciphertexts are needed
@@ -216,9 +208,4 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 
 		lib.MarshalBatchSeeded32(lib.EncryptedBatchIndexPath(i), ciphertexts, encryptor.GetSeeds())
 	}
-
-	fmt.Printf("\rEncrypting %4d Hashes  : %3d%% (%s)\n", nbGenomes, 100, time.Since(time1))
-	lib.PrintMemUsage()
-	fmt.Println()
-
 }

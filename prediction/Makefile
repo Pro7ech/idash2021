@@ -29,7 +29,7 @@ enc:
 pred:
 	/usr/bin/time -v ./ServerPred 
 dec:
-	/usr/bin/time -v ./ClientDec ${NBGENOMES}
+	/usr/bin/time -v ./ClientDec
 
 clean:
 	${GOBUILD} Clean.go
