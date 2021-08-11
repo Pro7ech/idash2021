@@ -8,8 +8,8 @@ import (
 	"github.com/ldsec/idash21_Task2/prediction/server"
 	"github.com/ldsec/lattigo/v2/ckks"
 	"os"
-	"time"
 	"strconv"
+	"time"
 )
 
 func main() {

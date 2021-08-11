@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
 	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"github.com/ldsec/idash21_Task2/prediction/preprocessing"
 	"github.com/ldsec/lattigo/v2/ckks"
@@ -70,10 +69,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 	remain := nbGenomes % 1
 	for scanner.Scan() {
 
-		if i%20 == 0 && (i>>1) < nbGenomes {
-			fmt.Printf("\rProcessing %4d Genomes :%3d%%", nbGenomes, int(100*(float64(i>>1)/float64(nbGenomes))))
-		}
-
 		// Expects :
 		// Even indexes = genome ID
 		// Odd indexes = genome
@@ -132,11 +127,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 		}
 	}
 
-	//fmt.Println(hashes[0])
-
-	//fmt.Println(hashTransposed[0][len(hashTransposed[0])-1])
-	//fmt.Println(hashes[len(hashes)-1][0])
-
 	//*************************** HASHES ENCRYPTION *******************************
 
 	// We need to encrypt a HashSize x nbGenomes matrix where the i-th row of the
@@ -177,8 +167,6 @@ func (c *Client) ProcessAndEncrypt(path string, nbGenomes int) {
 		var wg sync.WaitGroup
 		wg.Add(lib.NbGoRoutines)
 		for g := 0; g < lib.NbGoRoutines; g++ {
-
-			fmt.Printf("\rEncrypting %4d Hashes  : %3d%%", nbGenomes, int(100*float64(i*lib.NbGoRoutines+g)/float64(nbBatches*lib.NbGoRoutines)))
 
 			start := g * nbCipherPerGoRoutine
 			end := (g + 1) * nbCipherPerGoRoutine

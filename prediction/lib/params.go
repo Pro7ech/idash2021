@@ -16,7 +16,7 @@ var NbSamples = NbStrains * NbSamplesPerStrain
 // Client pre-processing parameters
 var HashSqrtSize = 16                      // Dimension of the hash matrix
 var HashSize = HashSqrtSize * HashSqrtSize // Number of coefficients in the hash matrix
-var Window = 6 // Fractal Chaos Game Representation window
+var Window = 6                             // Fractal Chaos Game Representation window
 
 var Normalizer = 1.0 / 5.0 // Applies x^(normalizer) to the coefficients of the Fractal Chaos Game Representation
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/csv"
 	"fmt"
 	"github.com/ldsec/idash21_Task2/prediction/client"
@@ -9,7 +10,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"encoding/binary"
 )
 
 func main() {
