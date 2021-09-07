@@ -60,7 +60,7 @@ func main() {
 	var data = make([]string, 5)
 	for scanner.Scan() {
 
-		if i == nbGenomes {
+		if i == nbGenomes<<1 {
 			break
 		}
 
