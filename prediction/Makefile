@@ -13,6 +13,7 @@ BINARY_UNIX=$(BINARY_NAME)_unix
 
 build:
 	${GOBUILD} KeyGen.go
+	${GOBUILD} ClientPro.go
 	${GOBUILD} ClientEnc.go
 	${GOBUILD} ServerPred.go
 	${GOBUILD} ClientDec.go
@@ -24,8 +25,10 @@ debug:
 
 key:
 	./KeyGen 
+pro:
+	./ClientPro ${NBGENOMES}
 enc:
-	./ClientEnc ${NBGENOMES}
+	./ClientEnc
 pred:
 	./ServerPred 
 dec:

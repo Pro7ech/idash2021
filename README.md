@@ -23,7 +23,8 @@ The script will output the weights both in `.npy` and `.binary` as well as a `.p
 
 ## Run iDash21
 - `$ make key` : generates the secret-key and stores it in `key/`.
-- `$ make enc NBGENOMES=2000` : processes,  encrypts and marshals the first 2000 samples located in `data/Challenge.fa`. Then returns the encrypted processed samples in `temp/`.
+- `$ make pro NBGENOMES=2000` : processes the first 2000 samples located iin `data/Challenge.fa`. Returns the result in `temps/`.
+- `$ make enc` : Encrypts the processed samples. Returns the encrypted processed samples in `temp/`.
 - `$ make pred` : unmarshals the encrypted samples in  `temp/`, evaluates the homomorphic prediction and marshals back the result in `temp/`.
 - `$ make dec` : unmarshals the encrypted prediction in `temp/`, decrypts and outputs the result in `results/prediction.csv`.
 
