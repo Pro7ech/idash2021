@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"time"
 )
 
 func main() {
@@ -34,11 +35,13 @@ func main() {
 	// ID0 [strain0, strain1, strain2, strain3],
 	// ID1 [                ...               ],
 	//
+	now := time.Now()
 	predictions := [][]float64{}
 	for i := 0; i < nbBatches; i++ {
 		ciphertexts := lib.UnmarshalBatch32(lib.EncryptedBatchPredIndexPath(i))
 		predictions = append(predictions, decryptor.DecryptBatchTranspose(ciphertexts)...)
 	}
+	fmt.Println(time.Since(now))
 
 	predictions = predictions[:nbGenomes]
 

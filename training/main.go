@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	"github.com/ldsec/idash21_Task2/lib"
-	"github.com/ldsec/idash21_Task2/preprocessing"
+	"github.com/ldsec/idash21_Task2/prediction/lib"
+	"github.com/ldsec/idash21_Task2/prediction/preprocessing"
 	"log"
 	"math"
 	"os"
@@ -33,7 +33,7 @@ func main() {
 
 	// Writes the processing parameters for the .py file training
 	var fwParams *os.File
-	if fwParams, err = os.Create("./model/params.binary"); err != nil {
+	if fwParams, err = os.Create("./params.binary"); err != nil {
 		panic(err)
 	}
 
@@ -50,7 +50,7 @@ func main() {
 	// For this case window must ONLY be even
 	//hasher := preprocessing.NewDCTHasherV2(nbGo, window, hashsqrtsize, normalizer)
 
-	file, err := os.Open("./data/Challenge.fa")
+	file, err := os.Open("./Challenge.fa")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,11 +63,11 @@ func main() {
 
 	// Creates the files containing the processed samples
 	var fwX, fwY *os.File
-	if fwX, err = os.Create("./model/X.binary"); err != nil {
+	if fwX, err = os.Create("./X.binary"); err != nil {
 		panic(err)
 	}
 
-	if fwY, err = os.Create("./model/Y.binary"); err != nil {
+	if fwY, err = os.Create("./Y.binary"); err != nil {
 		panic(err)
 	}
 

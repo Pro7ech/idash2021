@@ -172,23 +172,37 @@ def final_model():
     
     print("results with featuers= ",features,", kernel_initializer = ", ki, ", batch_size = ", bs)
     
-    history = model.fit(X, Y, epochs=100, batch_size=bs, verbose=2, validation_split=0.1, callbacks=[callback])
-    
+    history = model.fit(X, Y, epochs=150, batch_size=bs, verbose=2, validation_split=0.95, callbacks=[callback])
+
+    SMALL_SIZE = 12
+    MEDIUM_SIZE = 16
+    BIGGER_SIZE = 20
+
+    plt.rc('font', size=32)    
+    plt.rc('axes', titlesize=32) 
+    plt.rc('axes', labelsize=24)
+    plt.rc('xtick', labelsize=16)
+    plt.rc('ytick', labelsize=16)
+    plt.rc('legend', fontsize=24) 
+    plt.rc('figure', titlesize=16)
+    plt.rcParams.update()
+
     # summarize history for accuracy
     plt.plot(history.history['categorical_accuracy'])
     plt.plot(history.history['val_categorical_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'valid'], loc='upper left')
+    plt.title('Model Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['train', 'valid'], loc='lower right')
     plt.show()
+    
     # summarize history for loss
     plt.plot(history.history['loss'])
     plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'valid'], loc='upper left')
+    plt.title('Model Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['train', 'valid'], loc='upper right')
     plt.show()
     
     #Save both bias and weights in bianry and npy format
@@ -269,5 +283,5 @@ def test_model():
 if __name__ == "__main__":
     #train_model()
     #evaluate_model(k=10)
-    #final_model()
-    test_model()
+    final_model()
+    #test_model()

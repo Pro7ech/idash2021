@@ -9,7 +9,7 @@ var StrainsMap = map[string]int{
 }
 
 // Parameters for the training
-var NbSamplesPerStrain = 2000
+var NbSamplesPerStrain = 500
 var NbStrains = 4
 var NbSamples = NbStrains * NbSamplesPerStrain
 
