@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/binary"
+	"encoding/csv"
 	"fmt"
 	"github.com/ldsec/idash21_Task2/prediction/lib"
 	"github.com/ldsec/idash21_Task2/prediction/preprocessing"
@@ -71,11 +72,27 @@ func main() {
 		panic(err)
 	}
 
+	var fwXCSV, fwYCSV *os.File
+	if fwXCSV, err = os.Create("./X.csv"); err != nil {
+		panic(err)
+	}
+
+	if fwYCSV, err = os.Create("./Y.csv"); err != nil {
+		panic(err)
+	}
+
+	wX := csv.NewWriter(fwXCSV)
+	defer wX.Flush()
+
+	wY := csv.NewWriter(fwYCSV)
+	defer wY.Flush()
+
 	start := time.Now()
 
 	i := 0
 	dataX := make([]string, nbGo)
 	dataY := make([]string, nbGo)
+	dataCSV := make([]string, 256)
 	for scanner.Scan() {
 
 		if i&1 == 0 {
@@ -107,11 +124,16 @@ func main() {
 					hash := hasher.GetHash(g)
 					for i := range hash {
 						binary.LittleEndian.PutUint64(buffX[i<<3:(i+1)<<3], math.Float64bits(hash[i]))
+
+						dataCSV[i] = fmt.Sprintf("%f", hash[i])
 					}
 
 					buffY[g] = uint8(MatchStrainNameToLabel(dataY[g]))
 
 					fwX.Write(buffX)
+
+					wX.Write(dataCSV)
+					wY.Write([]string{fmt.Sprintf("%d", int(buffY[g]))})
 				}
 
 				fwY.Write(buffY)

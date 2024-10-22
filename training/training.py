@@ -148,12 +148,12 @@ def train_model():
             f.write(bytearray(data))
             f.close()
         np.save('bias_layer_{}.npy'.format(i), weights[1])
-        
+
 def final_model():
     ki = 'he_normal'
-    bs = 8
+    bs = 32
     #regularizers
-    l1=1e-7
+    l1=1e-6
     l2=1e-6
     #early stopping
     callback = callbacks.EarlyStopping(monitor='loss', patience=50)
@@ -164,15 +164,21 @@ def final_model():
     nb_samples = len(X)
     features = len(X[0])
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Dense(4, activation='softmax', kernel_initializer=ki, input_shape=(features,),kernel_regularizer=regularizers.l1_l2(l1=l1, l2=l2)))
+    model.add(tf.keras.layers.Dense(
+        4,
+        activation="softmax",
+        kernel_initializer=ki,
+        input_shape=(features,),
+        kernel_regularizer=regularizers.l1_l2(l1=l1, l2=l2))
+              )
     model.compile(
         optimizer="adam",
-        loss='categorical_crossentropy',
+        loss='mean_squared_error',
         metrics='categorical_accuracy')
     
     print("results with featuers= ",features,", kernel_initializer = ", ki, ", batch_size = ", bs)
     
-    history = model.fit(X, Y, epochs=150, batch_size=bs, verbose=2, validation_split=0.95, callbacks=[callback])
+    history = model.fit(X, Y, epochs=256, batch_size=bs, verbose=2, validation_split=0.5, callbacks=[callback])
 
     SMALL_SIZE = 12
     MEDIUM_SIZE = 16
@@ -284,4 +290,4 @@ if __name__ == "__main__":
     #train_model()
     #evaluate_model(k=10)
     final_model()
-    #test_model()
+    test_model()
